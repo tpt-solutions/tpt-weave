@@ -1,0 +1,10 @@
+# Generated tpt-weave working state (spec.md section 6)
+.tpt-weave/
+
+# Rust build artefacts
+/target/
+
+# Editor / OS noise
+*.swp
+.vscode/
+.DS_Store

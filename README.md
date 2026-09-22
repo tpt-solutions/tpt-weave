@@ -1,0 +1,59 @@
+# tpt-weave
+
+Cross-repository AI-context optimisation for the TPT Solutions ecosystem.
+
+tpt-weave is the reusable AI-context infrastructure layer for TPT Solutions repositories. It indexes Rust
+workspaces deterministically, builds hierarchical source representations, and delivers only the context a
+coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
+information required to complete the task correctly.
+
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phase 0 and Phase 1 of
+> [todo.md](todo.md) are complete (repository scaffold, architecture decisions, core types and
+> configuration). All other phases are pending.
+
+## Core principle
+
+> Do not compress information merely because it is large. Determine what information is necessary, expose
+> the smallest useful representation first, and retrieve more detail only when required.
+
+Deterministic algorithms run first; JEv (via OpenRouter) only makes small structured decisions over the
+already-reduced candidate set. See [spec.md](spec.md) §4.
+
+## Workspace layout
+
+Start as one repository with a workspace (spec §25):
+
+| Crate | Status | Purpose |
+|---|---|---|
+| `crates/tpt-weave-core` | Phase 1 done | Core types, token accounting, `.tpt-weave/manifest.toml` configuration |
+| `crates/tpt-weave-index` … `crates/tpt-weave-eval` | planned | Indexer, graph, context, decisions, cache, tools, MCP, CLI, eval (spec §25) |
+
+## Quick start
+
+Development (current):
+
+```sh
+cargo test --workspace
+```
+
+Planned CLI (UX defined in [docs/decisions.md](docs/decisions.md), implementation is Phase 10):
+
+```sh
+cd tpt-cv
+tpt-weave init
+tpt-weave index
+tpt-weave context "fix the image resampling bug"
+```
+
+## Documentation
+
+- [spec.md](spec.md) — design specification
+- [todo.md](todo.md) — phased implementation plan
+- [docs/decisions.md](docs/decisions.md) — architecture decisions: MSRV, Rust editions, initial CLI UX,
+  schema versioning, privacy/redaction policy, stable vs experimental APIs
+
+## Toolchain
+
+- **MSRV:** Rust 1.85 (edition 2024), enforced via `rust-version` in the workspace manifest
+- **Edition:** 2024
+- **License:** MIT (see [LICENSE](LICENSE))
