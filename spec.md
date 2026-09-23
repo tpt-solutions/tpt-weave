@@ -1123,7 +1123,26 @@ exclude = [
 
 28. Adoption Model
 
-A repository should become tpt-weave compatible through:
+For an existing TPT repository, the recommended path is a single command:
+
+tpt-weave adopt
+
+This detects Cargo/workspace structure the same way init/index already do,
+then in sequence:
+
+writes .tpt-weave/manifest.toml (init);
+adds the standard .tpt-weave/ .gitignore entries;
+builds the deterministic index (index --full);
+discovers TPT dependencies and registers the repository with the
+    cross-repository graph (spec §11);
+runs a baseline context benchmark (spec §23 evaluation methodology);
+validates the result (doctor).
+
+adopt performs no detection logic of its own beyond what init/index/doctor
+already implement — it is sugar over them, not a parallel implementation.
+
+The three underlying commands remain available individually for cases that
+need finer control, e.g. re-running just index after a change:
 
 tpt-weave init
 tpt-weave index

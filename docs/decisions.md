@@ -28,6 +28,7 @@ Spec references point to [spec.md](../spec.md).
 **Decision:** subcommand CLI, human-readable output by default, machine-readable via flags.
 
 ```text
+tpt-weave adopt                     # onboard an existing repo: init + index --full + register + doctor
 tpt-weave init                      # write .tpt-weave/manifest.toml (idempotent, --force to overwrite)
 tpt-weave index [--full]            # build/refresh the deterministic index
 tpt-weave doctor                    # validate manifest, index freshness, git and provider health
@@ -40,6 +41,12 @@ tpt-weave diff                      # reduced working-tree diff
 tpt-weave stats                     # token accounting + cache statistics
 tpt-weave cache [status|clear]      # cache management (default: status)
 ```
+
+- `adopt` is sugar for `init` + `index --full` + graph registration + `doctor`, run in
+  sequence — it must not duplicate the Cargo/workspace detection logic those commands
+  already implement. Its graph-registration and benchmark steps are no-ops until Phase 3
+  (graph) and Phase 11 (eval harness) exist; implement it last among the subcommands, once
+  the commands it composes are working (spec §28).
 
 **Global flags:** `--path <dir>` (operate on another working tree), `--json` (pretty JSON),
 `--compact` (single-line JSON, implies `--json`), `--no-color`, `--verbose`.

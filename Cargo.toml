@@ -1,7 +1,11 @@
 # tpt-weave workspace (spec.md section 25: one repository, many crates).
 [workspace]
 resolver = "2"
-members = ["crates/tpt-weave-core"]
+members = [
+    "crates/tpt-weave-core",
+    "crates/tpt-weave-index",
+    "crates/tpt-weave-rust",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -14,3 +18,10 @@ authors = ["TPT Solutions"]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
+syn = { version = "2", features = ["full", "extra-traits"] }
+quote = "1"
+proc-macro2 = { version = "1", features = ["span-locations"] }
+tpt-weave-core = { path = "crates/tpt-weave-core" }
+tpt-weave-index = { path = "crates/tpt-weave-index" }
+tpt-weave-rust = { path = "crates/tpt-weave-rust" }
+

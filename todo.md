@@ -1,7 +1,8 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-23):** Phase 0 complete (repository scaffold + decisions in `docs/decisions.md`).
-> Phase 1 complete (`tpt-weave-core`, 22 tests passing). Phases 2–20 pending.
+> **Status (2026-09-23):** Phases 0–2 complete (repository + decisions, core model + manifest
+> configuration, cargo/git/syn indexer; 33 tests passing, clippy `-D warnings` clean).
+> Phases 3–20 pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -46,40 +47,40 @@
 
 ### Cargo
 
-- [ ] Integrate cargo metadata.
-- [ ] Index workspace members.
-- [ ] Index packages.
-- [ ] Index targets.
-- [ ] Index dependencies.
-- [ ] Index features.
-- [ ] Detect optional dependencies.
+- [x] Integrate cargo metadata.
+- [x] Index workspace members.
+- [x] Index packages.
+- [x] Index targets.
+- [x] Index dependencies.
+- [x] Index features.
+- [x] Detect optional dependencies.
 
 ### Source parsing
 
-- [ ] Integrate syn.
-- [ ] Extract modules.
-- [ ] Extract structs.
-- [ ] Extract enums.
-- [ ] Extract traits.
-- [ ] Extract impl blocks.
-- [ ] Extract functions.
-- [ ] Extract methods.
-- [ ] Extract constants.
-- [ ] Extract type aliases.
-- [ ] Extract macros.
-- [ ] Extract visibility.
-- [ ] Extract signatures.
-- [ ] Extract attributes.
-- [ ] Record source locations.
+- [x] Integrate syn.
+- [x] Extract modules.
+- [x] Extract structs.
+- [x] Extract enums.
+- [x] Extract traits.
+- [x] Extract impl blocks.
+- [x] Extract functions.
+- [x] Extract methods.
+- [x] Extract constants.
+- [x] Extract type aliases.
+- [x] Extract macros.
+- [x] Extract visibility.
+- [x] Extract signatures.
+- [x] Extract attributes.
+- [x] Record source locations.
 
 ### Git
 
-- [ ] Detect repository root.
-- [ ] Record current revision.
-- [ ] Detect modified files.
-- [ ] Index current diff.
-- [ ] Support changed-file queries.
-- [ ] Add optional history lookup.
+- [x] Detect repository root.
+- [x] Record current revision.
+- [x] Detect modified files.
+- [x] Index current diff.
+- [x] Support changed-file queries.
+- [x] Add optional history lookup.
 
 ## Phase 3 — Symbol Graph
 
@@ -246,6 +247,7 @@
 **Implement:**
 
 ```text
+tpt-weave adopt
 tpt-weave init
 tpt-weave index
 tpt-weave doctor

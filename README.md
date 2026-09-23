@@ -26,7 +26,9 @@ Start as one repository with a workspace (spec §25):
 | Crate | Status | Purpose |
 |---|---|---|
 | `crates/tpt-weave-core` | Phase 1 done | Core types, token accounting, `.tpt-weave/manifest.toml` configuration |
-| `crates/tpt-weave-index` … `crates/tpt-weave-eval` | planned | Indexer, graph, context, decisions, cache, tools, MCP, CLI, eval (spec §25) |
+| `crates/tpt-weave-index` | Phase 2 done | Cargo metadata + git indexing (status, diff, history) |
+| `crates/tpt-weave-rust` | Phase 2 done | Rust source extraction via syn (symbols, signatures, locations) |
+| `crates/tpt-weave-graph` … `crates/tpt-weave-eval` | planned | Graph, context, decisions, cache, tools, MCP, CLI, eval (spec §25) |
 
 ## Quick start
 
@@ -43,6 +45,13 @@ cd tpt-cv
 tpt-weave init
 tpt-weave index
 tpt-weave context "fix the image resampling bug"
+```
+
+Or, for an existing repository, `adopt` in one step:
+
+```sh
+cd tpt-cv
+tpt-weave adopt
 ```
 
 ## Documentation
