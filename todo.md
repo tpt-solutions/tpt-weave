@@ -1,8 +1,10 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-23):** Phases 0–2 complete (repository + decisions, core model + manifest
-> configuration, cargo/git/syn indexer; 33 tests passing, clippy `-D warnings` clean).
-> Phases 3–20 pending.
+> **Status (2026-09-23):** Phases 0–7 complete (repository + decisions, core model + manifest
+> configuration, cargo/git/syn indexer, symbol graph, hierarchical representations + expansion,
+> deterministic context retrieval, tool output reduction, filesystem cache; 90 tests passing,
+> clippy `-D warnings` clean).
+> Phases 8–20 pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -101,84 +103,84 @@
 
 **Implement:**
 
-- [ ] Level 0 metadata.
-- [ ] Level 1 symbol listing.
-- [ ] Level 2 signatures.
-- [ ] Level 3 source skeleton.
-- [ ] Level 4 targeted implementation.
-- [ ] Level 5 complete source.
+- [x] Level 0 metadata.
+- [x] Level 1 symbol listing.
+- [x] Level 2 signatures.
+- [x] Level 3 source skeleton.
+- [x] Level 4 targeted implementation.
+- [x] Level 5 complete source.
 
 ### Skeleton generation
 
-- [ ] Remove function bodies.
-- [ ] Preserve signatures.
-- [ ] Preserve type definitions.
-- [ ] Preserve impl relationships.
-- [ ] Preserve relevant attributes.
-- [ ] Preserve module structure.
-- [ ] Preserve line/source references.
+- [x] Remove function bodies.
+- [x] Preserve signatures.
+- [x] Preserve type definitions.
+- [x] Preserve impl relationships.
+- [x] Preserve relevant attributes.
+- [x] Preserve module structure.
+- [x] Preserve line/source references.
 
 ### Expansion
 
-- [ ] Expand symbol.
-- [ ] Expand module.
-- [ ] Expand dependency.
-- [ ] Expand test.
-- [ ] Expand related implementation.
+- [x] Expand symbol.
+- [x] Expand module.
+- [x] Expand dependency.
+- [x] Expand test.
+- [x] Expand related implementation.
 
 ## Phase 5 — Deterministic Context Retrieval
 
-- [ ] Implement repository overview.
-- [ ] Implement file lookup.
-- [ ] Implement symbol lookup.
-- [ ] Implement reference lookup.
-- [ ] Implement dependency lookup.
-- [ ] Implement related-symbol lookup.
-- [ ] Implement changed-file lookup.
-- [ ] Implement test lookup.
-- [ ] Implement context budgeting.
-- [ ] Implement deterministic relevance scoring.
-- [ ] Implement context ordering.
-- [ ] Implement context deduplication.
+- [x] Implement repository overview.
+- [x] Implement file lookup.
+- [x] Implement symbol lookup.
+- [x] Implement reference lookup.
+- [x] Implement dependency lookup.
+- [x] Implement related-symbol lookup.
+- [x] Implement changed-file lookup.
+- [x] Implement test lookup.
+- [x] Implement context budgeting.
+- [x] Implement deterministic relevance scoring.
+- [x] Implement context ordering.
+- [x] Implement context deduplication.
 
 ## Phase 6 — Tool Output Reduction
 
 **Support:**
 
-- [ ] cargo check.
-- [ ] cargo test.
-- [ ] cargo clippy.
-- [ ] cargo build.
-- [ ] cargo fmt.
-- [ ] git status.
-- [ ] git diff.
-- [ ] file listings.
-- [ ] search results.
-- [ ] JSON outputs.
-- [ ] compiler diagnostics.
-- [ ] generic logs.
+- [x] cargo check.
+- [x] cargo test.
+- [x] cargo clippy.
+- [x] cargo build.
+- [x] cargo fmt.
+- [x] git status.
+- [x] git diff.
+- [x] file listings.
+- [x] search results.
+- [x] JSON outputs.
+- [x] compiler diagnostics.
+- [x] generic logs.
 
 **For each:**
 
-- [ ] Preserve important facts.
-- [ ] Preserve failure details.
-- [ ] Store raw output locally.
-- [ ] Provide expansion mechanism.
-- [ ] Measure reduction.
+- [x] Preserve important facts.
+- [x] Preserve failure details.
+- [x] Store raw output locally.
+- [x] Provide expansion mechanism.
+- [x] Measure reduction.
 
 ## Phase 7 — Cache
 
-- [ ] Design cache key.
-- [ ] Implement filesystem cache.
-- [ ] Cache repository index.
-- [ ] Cache symbol lookup.
-- [ ] Cache skeletons.
-- [ ] Cache context selections.
-- [ ] Cache tool-result reductions.
-- [ ] Implement revision invalidation.
-- [ ] Implement schema invalidation.
-- [ ] Implement manual cache clear.
-- [ ] Add cache statistics.
+- [x] Design cache key.
+- [x] Implement filesystem cache.
+- [x] Cache repository index.
+- [x] Cache symbol lookup.
+- [x] Cache skeletons.
+- [x] Cache context selections.
+- [x] Cache tool-result reductions.
+- [x] Implement revision invalidation.
+- [x] Implement schema invalidation.
+- [x] Implement manual cache clear.
+- [x] Add cache statistics.
 
 ## Phase 8 — JEv
 

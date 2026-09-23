@@ -7,9 +7,10 @@ workspaces deterministically, builds hierarchical source representations, and de
 coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
 information required to complete the task correctly.
 
-> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phase 0 and Phase 1 of
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–7 of
 > [todo.md](todo.md) are complete (repository scaffold, architecture decisions, core types and
-> configuration). All other phases are pending.
+> configuration, indexer, symbol graph, hierarchical representations, deterministic context
+> retrieval, tool output reduction, filesystem cache). All other phases are pending.
 
 ## Core principle
 
@@ -27,8 +28,12 @@ Start as one repository with a workspace (spec §25):
 |---|---|---|
 | `crates/tpt-weave-core` | Phase 1 done | Core types, token accounting, `.tpt-weave/manifest.toml` configuration |
 | `crates/tpt-weave-index` | Phase 2 done | Cargo metadata + git indexing (status, diff, history) |
-| `crates/tpt-weave-rust` | Phase 2 done | Rust source extraction via syn (symbols, signatures, locations) |
-| `crates/tpt-weave-graph` … `crates/tpt-weave-eval` | planned | Graph, context, decisions, cache, tools, MCP, CLI, eval (spec §25) |
+| `crates/tpt-weave-rust` | Phase 2 done | Rust source extraction via syn (symbols, signatures, locations, skeletons) |
+| `crates/tpt-weave-graph` | Phase 3 done | Symbol/module/crate/dependency graph, references, persistence |
+| `crates/tpt-weave-context` | Phases 4–5 done | Hierarchical representations (levels 0–5), expansion, deterministic retrieval |
+| `crates/tpt-weave-tools` | Phase 6 done | Deterministic tool-output reduction (cargo/git/tests/diffs/logs/JSON) with raw storage |
+| `crates/tpt-weave-cache` | Phase 7 done | Filesystem cache: revision/schema keys, invalidation, clear, statistics |
+| `crates/tpt-weave-decisions` … `crates/tpt-weave-eval` | planned | Decisions, MCP, CLI, eval (spec §25) |
 
 ## Quick start
 

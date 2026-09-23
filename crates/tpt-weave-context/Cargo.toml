@@ -1,0 +1,20 @@
+[package]
+name = "tpt-weave-context"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Hierarchical context representations and expansion for tpt-weave"
+# Publication happens in Phase 20 (todo.md); prevent accidental publishes.
+publish = false
+
+[dependencies]
+serde.workspace = true
+tpt-weave-core.workspace = true
+tpt-weave-rust.workspace = true
+tpt-weave-graph.workspace = true
+
+[dev-dependencies]
+syn.workspace = true
+tpt-weave-index.workspace = true

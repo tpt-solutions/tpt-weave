@@ -1,0 +1,15 @@
+[package]
+name = "tpt-weave-decisions"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Decision provider abstraction, JEv categories and policy for tpt-weave"
+# Publication happens in Phase 20 (todo.md); prevent accidental publishes.
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tpt-weave-core.workspace = true

@@ -6,6 +6,11 @@ members = [
     "crates/tpt-weave-index",
     "crates/tpt-weave-rust",
     "crates/tpt-weave-graph",
+    "crates/tpt-weave-context",
+    "crates/tpt-weave-tools",
+    "crates/tpt-weave-cache",
+    "crates/tpt-weave-decisions",
+    "crates/tpt-weave-openrouter",
 ]
 
 [workspace.package]
@@ -26,5 +31,15 @@ tpt-weave-core = { path = "crates/tpt-weave-core" }
 tpt-weave-index = { path = "crates/tpt-weave-index" }
 tpt-weave-rust = { path = "crates/tpt-weave-rust" }
 tpt-weave-graph = { path = "crates/tpt-weave-graph" }
+tpt-weave-context = { path = "crates/tpt-weave-context" }
+tpt-weave-tools = { path = "crates/tpt-weave-tools" }
+tpt-weave-cache = { path = "crates/tpt-weave-cache" }
+tpt-weave-decisions = { path = "crates/tpt-weave-decisions" }
+tpt-weave-openrouter = { path = "crates/tpt-weave-openrouter" }
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "json",
+    "rustls-tls",
+] }
 
 
