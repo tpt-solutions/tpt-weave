@@ -84,18 +84,18 @@
 
 ## Phase 3 — Symbol Graph
 
-- [ ] Build symbol table.
-- [ ] Build module graph.
-- [ ] Build crate graph.
-- [ ] Build dependency graph.
-- [ ] Build reference relationships.
-- [ ] Track callers/callees where possible.
-- [ ] Track trait implementations.
-- [ ] Track type relationships.
-- [ ] Track public API relationships.
-- [ ] Add cross-repository graph support.
-- [ ] Add graph persistence.
-- [ ] Add graph invalidation.
+- [x] Build symbol table.
+- [x] Build module graph.
+- [x] Build crate graph.
+- [x] Build dependency graph.
+- [x] Build reference relationships.
+- [x] Track callers/callees where possible.
+- [x] Track trait implementations.
+- [x] Track type relationships.
+- [x] Track public API relationships.
+- [x] Add cross-repository graph support.
+- [x] Add graph persistence.
+- [x] Add graph invalidation.
 
 ## Phase 4 — Hierarchical Representations
 

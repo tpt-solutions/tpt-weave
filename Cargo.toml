@@ -5,6 +5,7 @@ members = [
     "crates/tpt-weave-core",
     "crates/tpt-weave-index",
     "crates/tpt-weave-rust",
+    "crates/tpt-weave-graph",
 ]
 
 [workspace.package]
@@ -18,10 +19,12 @@ authors = ["TPT Solutions"]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
-syn = { version = "2", features = ["full", "extra-traits"] }
+syn = { version = "2", features = ["full", "extra-traits", "visit"] }
 quote = "1"
 proc-macro2 = { version = "1", features = ["span-locations"] }
 tpt-weave-core = { path = "crates/tpt-weave-core" }
 tpt-weave-index = { path = "crates/tpt-weave-index" }
 tpt-weave-rust = { path = "crates/tpt-weave-rust" }
+tpt-weave-graph = { path = "crates/tpt-weave-graph" }
+
 

@@ -179,6 +179,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-weave-graph"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tpt-weave-core",
+ "tpt-weave-index",
+ "tpt-weave-rust",
+]
+
+[[package]]
 name = "tpt-weave-index"
 version = "0.1.0"
 dependencies = [

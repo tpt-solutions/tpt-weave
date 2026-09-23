@@ -6,6 +6,7 @@
 //! points at the item's name (or the `impl` keyword). Signatures are
 //! rendered from token streams and normalised to a single line.
 
+use crate::mentions::{self, Mention};
 use crate::record::{SymbolRecord, Visibility};
 use proc_macro2::Span;
 use quote::{quote, ToTokens};
@@ -49,13 +50,15 @@ pub struct FileInput<'a> {
     pub module_prefix: &'a [&'a str],
 }
 
-/// Symbols extracted from one file.
+/// Symbols and mentions extracted from one file.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ParsedFile {
     /// The path as passed in.
     pub path: String,
     /// Symbols in depth-first item order.
     pub symbols: Vec<SymbolRecord>,
+    /// Identifier occurrences attributable to those symbols.
+    pub mentions: Vec<Mention>,
 }
 
 /// Parses `source` and extracts all top-level and nested items.
@@ -73,11 +76,13 @@ pub fn parse_file(input: &FileInput<'_>, source: &str) -> Result<ParsedFile, Par
         input,
         module_path: input.module_prefix.iter().map(|s| (*s).to_string()).collect(),
         symbols: Vec::new(),
+        mentions: Vec::new(),
     };
     extractor.walk_items(&file.items, None);
     Ok(ParsedFile {
         path: input.path.to_string(),
         symbols: extractor.symbols,
+        mentions: extractor.mentions,
     })
 }
 
@@ -85,6 +90,7 @@ struct Extractor<'a> {
     input: &'a FileInput<'a>,
     module_path: Vec<String>,
     symbols: Vec<SymbolRecord>,
+    mentions: Vec<Mention>,
 }
 
 impl<'a> Extractor<'a> {
@@ -161,7 +167,7 @@ impl<'a> Extractor<'a> {
                 let where_clause = &st.generics.where_clause;
                 let signature =
                     normalize(&quote!(#vis #struct_token #ident #generics #where_clause).to_string());
-                self.push_symbol(
+                let id = self.push_symbol(
                     st.ident.span(),
                     &st.vis,
                     tpt_weave_core::SymbolKind::Struct,
@@ -170,6 +176,7 @@ impl<'a> Extractor<'a> {
                     &st.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Enum(en) => {
                 let vis = &en.vis;
@@ -179,7 +186,7 @@ impl<'a> Extractor<'a> {
                 let where_clause = &en.generics.where_clause;
                 let signature =
                     normalize(&quote!(#vis #enum_token #ident #generics #where_clause).to_string());
-                self.push_symbol(
+                let id = self.push_symbol(
                     en.ident.span(),
                     &en.vis,
                     tpt_weave_core::SymbolKind::Enum,
@@ -188,12 +195,13 @@ impl<'a> Extractor<'a> {
                     &en.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Fn(fun) => {
                 let vis = &fun.vis;
                 let sig = &fun.sig;
                 let signature = normalize(&quote!(#vis #sig).to_string());
-                self.push_symbol(
+                let id = self.push_symbol(
                     fun.sig.ident.span(),
                     &fun.vis,
                     tpt_weave_core::SymbolKind::Function,
@@ -202,6 +210,7 @@ impl<'a> Extractor<'a> {
                     &fun.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Const(konst) => {
                 let vis = &konst.vis;
@@ -216,7 +225,7 @@ impl<'a> Extractor<'a> {
                     &quote!(#vis #const_token #ident #colon_token #ty #eq_token #expr #semi_token)
                         .to_string(),
                 );
-                self.push_symbol(
+                let id = self.push_symbol(
                     konst.ident.span(),
                     &konst.vis,
                     tpt_weave_core::SymbolKind::Constant,
@@ -225,6 +234,7 @@ impl<'a> Extractor<'a> {
                     &konst.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Static(stat) => {
                 // Statics are recorded as constants (SymbolKind has no
@@ -242,7 +252,7 @@ impl<'a> Extractor<'a> {
                     &quote!(#vis #static_token #mutability #ident #colon_token #ty #eq_token #expr #semi_token)
                         .to_string(),
                 );
-                self.push_symbol(
+                let id = self.push_symbol(
                     stat.ident.span(),
                     &stat.vis,
                     tpt_weave_core::SymbolKind::Constant,
@@ -251,6 +261,7 @@ impl<'a> Extractor<'a> {
                     &stat.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Type(alias) => {
                 let vis = &alias.vis;
@@ -264,7 +275,7 @@ impl<'a> Extractor<'a> {
                     &quote!(#vis #type_token #ident #generics #eq_token #ty #semi_token)
                         .to_string(),
                 );
-                self.push_symbol(
+                let id = self.push_symbol(
                     alias.ident.span(),
                     &alias.vis,
                     tpt_weave_core::SymbolKind::TypeAlias,
@@ -273,6 +284,7 @@ impl<'a> Extractor<'a> {
                     &alias.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Macro(mac) => {
                 // `macro_rules!` definitions only (macro invocations are not
@@ -327,12 +339,13 @@ impl<'a> Extractor<'a> {
                     &tr.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
                 // Trait methods (declarations) become `Trait::method`.
                 for trait_item in &tr.items {
                     if let syn::TraitItem::Fn(method) = trait_item {
                         let sig = &method.sig;
                         let method_signature = normalize(&quote!(#sig).to_string());
-                        self.push_symbol(
+                        let method_id = self.push_symbol(
                             method.sig.ident.span(),
                             &SynVisibility::Inherited,
                             tpt_weave_core::SymbolKind::Method,
@@ -341,6 +354,11 @@ impl<'a> Extractor<'a> {
                             &method.attrs,
                             Some(&id),
                         );
+                        self.mentions.extend(mentions::walk_fn(
+                            &method_id.canonical_key(),
+                            sig,
+                            method.default.as_ref(),
+                        ));
                     }
                 }
             }
@@ -381,6 +399,7 @@ impl<'a> Extractor<'a> {
                     &im.attrs,
                     parent,
                 );
+                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
                 // Members become `Type::member`; the enclosing impl's
                 // canonical key in `parent` disambiguates same-named methods
                 // from different trait impls.
@@ -390,7 +409,7 @@ impl<'a> Extractor<'a> {
                             let vis = &method.vis;
                             let sig = &method.sig;
                             let method_signature = normalize(&quote!(#vis #sig).to_string());
-                            self.push_symbol(
+                            let method_id = self.push_symbol(
                                 method.sig.ident.span(),
                                 &method.vis,
                                 tpt_weave_core::SymbolKind::Method,
@@ -399,6 +418,11 @@ impl<'a> Extractor<'a> {
                                 &method.attrs,
                                 Some(&id),
                             );
+                            self.mentions.extend(mentions::walk_fn(
+                                &method_id.canonical_key(),
+                                sig,
+                                Some(&method.block),
+                            ));
                         }
                         syn::ImplItem::Const(konst) => {
                             let vis = &konst.vis;
@@ -414,7 +438,7 @@ impl<'a> Extractor<'a> {
                                 &quote!(#vis #defaultness #const_token #ident #colon_token #ty #eq_token #expr #semi_token)
                                     .to_string(),
                             );
-                            self.push_symbol(
+                            let const_id = self.push_symbol(
                                 konst.ident.span(),
                                 &konst.vis,
                                 tpt_weave_core::SymbolKind::Constant,
@@ -423,6 +447,11 @@ impl<'a> Extractor<'a> {
                                 &konst.attrs,
                                 Some(&id),
                             );
+                            self.mentions.extend(mentions::walk_type_expr(
+                                &const_id.canonical_key(),
+                                &konst.ty,
+                                Some(&konst.expr),
+                            ));
                         }
                         _ => {}
                     }

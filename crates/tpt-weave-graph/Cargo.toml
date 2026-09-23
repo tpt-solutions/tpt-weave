@@ -1,0 +1,17 @@
+[package]
+name = "tpt-weave-graph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Repository symbol graph (symbols, modules, crates, references) for tpt-weave"
+# Publication happens in Phase 20 (todo.md); prevent accidental publishes.
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tpt-weave-core.workspace = true
+tpt-weave-index.workspace = true
+tpt-weave-rust.workspace = true
