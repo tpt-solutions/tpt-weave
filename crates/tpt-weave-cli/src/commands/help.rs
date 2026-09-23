@@ -11,8 +11,8 @@ Usage:
   tpt-weave [global flags] <command> [args]
 
 Commands:
-  adopt                     onboard: init + index --full + doctor
-  init                      write .tpt-weave/manifest.toml (--force to overwrite)
+  adopt                     onboard: init + index + register + baseline + doctor
+  init                      write .tpt-weave/manifest.toml + .gitignore (--force)
   index                     build/refresh the deterministic index (--full to rebuild)
   doctor                    validate manifest, index freshness, git and provider
   overview                  level-0 repository overview
@@ -47,5 +47,8 @@ Exit codes:
 
 pub fn version() -> Rendered {
     let version = env!("CARGO_PKG_VERSION");
-    Rendered::new(format!("tpt-weave {version}"), json!({ "version": version }))
+    Rendered::new(
+        format!("tpt-weave {version}"),
+        json!({ "version": version }),
+    )
 }

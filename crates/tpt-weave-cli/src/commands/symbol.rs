@@ -14,9 +14,7 @@ pub fn run(cli: &Cli, name: &str) -> Result<Rendered, CliError> {
     let found = retriever.find_symbols(name);
 
     if found.is_empty() {
-        return Err(CliError::not_found(format!(
-            "no symbols matching `{name}`"
-        )));
+        return Err(CliError::not_found(format!("no symbols matching `{name}`")));
     }
 
     let mut human = format!("matches: {}\n", found.len());

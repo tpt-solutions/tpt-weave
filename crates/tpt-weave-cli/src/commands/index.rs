@@ -30,10 +30,7 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
                     paths.len()
                 };
                 return Ok(Rendered::new(
-                    format!(
-                        "index up to date ({} symbols, {} files)",
-                        symbols, files
-                    ),
+                    format!("index up to date ({} symbols, {} files)", symbols, files),
                     json!({
                         "path": path.display().to_string(),
                         "rebuilt": false,

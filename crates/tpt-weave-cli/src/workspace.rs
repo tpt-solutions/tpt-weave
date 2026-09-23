@@ -63,6 +63,11 @@ impl Workspace {
             .map_err(|e| CliError::internal(format!("failed to load sources: {e}")))?;
 
         let mut builder = GraphBuilder::new(&repository_name, revision, cargo.clone());
+        // Cross-repository registration: TPT-named path dependencies become
+        // external links (spec.md section 11 / section 28 adopt step).
+        for (package, repository) in discover_tpt_dependencies(&cargo) {
+            builder = builder.link_cross_repository(package, repository);
+        }
         let mut parsed_any = false;
         for package in cargo.workspace_packages() {
             let package_root = package
@@ -197,6 +202,21 @@ impl Workspace {
     }
 }
 
+/// Sorted `(package, repository)` pairs for `tpt-*` non-member dependencies.
+pub fn discover_tpt_dependencies(cargo: &tpt_weave_index::CargoIndex) -> Vec<(String, String)> {
+    let members: std::collections::BTreeSet<&str> =
+        cargo.workspace_members.iter().map(String::as_str).collect();
+    let mut links: std::collections::BTreeSet<(String, String)> = std::collections::BTreeSet::new();
+    for package in cargo.workspace_packages() {
+        for dep in &package.dependencies {
+            if dep.name.starts_with("tpt-") && !members.contains(dep.name.as_str()) {
+                links.insert((dep.name.clone(), dep.name.clone()));
+            }
+        }
+    }
+    links.into_iter().collect()
+}
+
 /// Collects `.rs` files under `package_root`, keyed by path relative to
 /// `repo_root` (`/`-separated). Skips `target/`, `.git/`, `.tpt-weave/`.
 fn collect_rust_files(
@@ -213,8 +233,7 @@ fn walk(dir: &Path, repo_root: &Path, out: &mut Vec<(String, String)>) -> Result
     let entries = std::fs::read_dir(dir)
         .map_err(|e| CliError::internal(format!("{}: {e}", dir.display())))?;
     for entry in entries {
-        let entry =
-            entry.map_err(|e| CliError::internal(format!("{}: {e}", dir.display())))?;
+        let entry = entry.map_err(|e| CliError::internal(format!("{}: {e}", dir.display())))?;
         let name = entry.file_name();
         let name = name.to_string_lossy();
         if name == "target" || name == ".git" || name == ".tpt-weave" {

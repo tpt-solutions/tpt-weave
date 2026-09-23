@@ -33,7 +33,7 @@ track rmcp's requirement.
 **Decision:** subcommand CLI, human-readable output by default, machine-readable via flags.
 
 ```text
-tpt-weave adopt                     # onboard an existing repo: init + index --full + register + doctor
+tpt-weave adopt                     # onboard: init + gitignore + index --full + register + baseline + doctor
 tpt-weave init                      # write .tpt-weave/manifest.toml (idempotent, --force to overwrite)
 tpt-weave index [--full]            # build/refresh the deterministic index
 tpt-weave doctor                    # validate manifest, index freshness, git and provider health
@@ -47,11 +47,12 @@ tpt-weave stats                     # token accounting + cache statistics
 tpt-weave cache [status|clear]      # cache management (default: status)
 ```
 
-- `adopt` is sugar for `init` + `index --full` + graph registration + `doctor`, run in
-  sequence — it must not duplicate the Cargo/workspace detection logic those commands
-  already implement. Its graph-registration and benchmark steps are no-ops until Phase 3
-  (graph) and Phase 11 (eval harness) exist; implement it last among the subcommands, once
-  the commands it composes are working (spec §28).
+- `adopt` is sugar for `init` + `.gitignore` entries + `index --full` + cross-repository
+  registration + baseline context benchmark + `doctor`, run in sequence — it must not
+  duplicate the Cargo/workspace detection logic those commands already implement. Implemented
+  in Phase 11 once the graph (Phase 3) and eval harness existed (spec §28); the benchmark is
+  model-free (full-source baseline vs budgeted retrieval) and writes
+  `.tpt-weave/baseline-report.json`.
 
 **Global flags:** `--path <dir>` (operate on another working tree), `--json` (pretty JSON),
 `--compact` (single-line JSON, implies `--json`), `--no-color`, `--verbose`.
@@ -125,3 +126,21 @@ in the decision path (Phase 8).
   transport failures and retryable statuses (429, 500, 502, 503, 524, 529); 400/401/402/403/404
   fail immediately. API keys are read from the env var named by `[provider] api_key_env` only
   (§5: never stored in the manifest).
+
+## 8. Evaluation harness is model-free by default (Phase 11)
+
+**Decision:** the `tpt-weave-eval` crate measures **structural** token reduction without
+invoking a model; `tpt-weave adopt` runs a single local baseline benchmark on every onboard.
+
+- Captures (`BaselineCapture` / `WeaveCapture`) still carry optional `cost_usd`, `latency_ms`
+  and `task_success` so a future offline corpus can replay real agent runs (spec §23);
+  the local harness leaves cost `None` and reports structural success as "retrieval produced a
+  non-empty selection".
+- Primary metric is **Net Token Reduction** `1 - (delivered + jev) / raw`; secondary is
+  **Task Success Preservation** `weave successes / baseline successes` (spec §23). Aggregates
+  fold means over paired tasks; empty corpora default preservation to `1.0`.
+- The local comparison baseline is the naive full-source token volume of every indexed file;
+  the weave side is budgeted `Retriever::retrieve` selection. Reports serialise as
+  `.tpt-weave/baseline-report.json` (eval schema `1`, independent of the index schema).
+- No remote decision calls are made from the harness; JEv overhead is recorded when a capture
+  supplies it. Privacy defaults (§5) are therefore unchanged by evaluation.

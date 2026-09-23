@@ -101,9 +101,8 @@ pub fn run(
     });
 
     let mut rendered = Rendered::new(human.trim_end(), json);
-    rendered = rendered.with_detail(format!(
-        "expand a candidate: tpt-weave expand <context-id> --level skeleton"
-    ));
+    rendered =
+        rendered.with_detail("expand a candidate: tpt-weave expand <context-id> --level skeleton");
     Ok(rendered)
 }
 

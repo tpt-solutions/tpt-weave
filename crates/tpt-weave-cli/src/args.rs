@@ -102,9 +102,7 @@ struct Args {
 
 impl Args {
     fn new(args: Vec<String>) -> Self {
-        Self {
-            items: args.into(),
-        }
+        Self { items: args.into() }
     }
 
     fn next(&mut self) -> Option<String> {
@@ -193,7 +191,9 @@ fn apply_flag(
             let level = parse_level(&value)?;
             match command {
                 Some(Command::Expand { level: slot, .. })
-                | Some(Command::Context { max_level: slot, .. }) => *slot = Some(level),
+                | Some(Command::Context {
+                    max_level: slot, ..
+                }) => *slot = Some(level),
                 _ => {
                     return Err(CliError::usage(
                         "`--level` is only valid with `expand` or `context`",

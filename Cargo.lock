@@ -1237,6 +1237,7 @@ dependencies = [
  "tpt-weave-cache",
  "tpt-weave-context",
  "tpt-weave-core",
+ "tpt-weave-eval",
  "tpt-weave-graph",
  "tpt-weave-index",
  "tpt-weave-rust",
@@ -1272,6 +1273,19 @@ dependencies = [
  "serde_json",
  "tpt-weave-core",
  "tpt-weave-openrouter",
+]
+
+[[package]]
+name = "tpt-weave-eval"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tpt-weave-context",
+ "tpt-weave-core",
+ "tpt-weave-graph",
+ "tpt-weave-index",
+ "tpt-weave-rust",
 ]
 
 [[package]]

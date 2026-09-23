@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 use tpt_weave_cli::args::{CacheAction, Command as CliCommand};
-use tpt_weave_cli::{run, ExitCode};
+use tpt_weave_cli::{ExitCode, run};
 
 static FIXTURE_COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -25,9 +25,7 @@ fn fixture() -> PathBuf {
     fs::create_dir_all(dir.join("src")).expect("mkdir");
     fs::write(
         dir.join("Cargo.toml"),
-        format!(
-            "[package]\nname = \"fixture{n}\"\nversion = \"0.1.0\"\nedition = \"2024\"\n"
-        ),
+        format!("[package]\nname = \"fixture{n}\"\nversion = \"0.1.0\"\nedition = \"2024\"\n"),
     )
     .expect("Cargo.toml");
     fs::write(
@@ -97,9 +95,18 @@ fn init_writes_manifest_and_is_idempotent() {
     assert!(stdout.contains("wrote"), "{stdout}");
     assert!(dir.join(".tpt-weave").join("manifest.toml").exists());
 
+    let gitignore = fs::read_to_string(dir.join(".gitignore")).expect(".gitignore");
+    assert!(
+        gitignore.contains("/.tpt-weave/"),
+        "gitignore should ignore .tpt-weave: {gitignore}"
+    );
+
+    // Second init: idempotent manifest, gitignore not duplicated.
     let (code2, stdout2, _) = cli(&dir, &["init"]);
     assert_eq!(code2, 0);
     assert!(stdout2.contains("already present"), "{stdout2}");
+    let gitignore2 = fs::read_to_string(dir.join(".gitignore")).expect(".gitignore");
+    assert_eq!(gitignore, gitignore2, "gitignore should not duplicate");
 
     let (code3, stdout3, _) = cli(&dir, &["init", "--force"]);
     assert_eq!(code3, 0);
@@ -126,7 +133,10 @@ fn index_and_overview_human_json_compact() {
 
     let (code, compact, stderr) = cli(&dir, &["--compact", "overview"]);
     assert_eq!(code, 0, "{stderr}");
-    assert!(!compact.trim_end().contains('\n') || compact.lines().count() == 1, "{compact}");
+    assert!(
+        !compact.trim_end().contains('\n') || compact.lines().count() == 1,
+        "{compact}"
+    );
     let value: serde_json::Value = serde_json::from_str(compact.trim()).expect("compact json");
     assert!(value.get("repository").is_some());
 }
@@ -179,6 +189,22 @@ fn doctor_after_adopt_passes() {
     assert_eq!(code, 0, "stdout={stdout}\nstderr={stderr}");
     assert!(stdout.contains("adopted"), "{stdout}");
     assert!(dir.join(".tpt-weave").join("graph.json").exists());
+    assert!(stdout.contains("baseline benchmark"), "{stdout}");
+    assert!(stdout.contains("registered"), "{stdout}");
+
+    let report_path = dir.join(".tpt-weave").join("baseline-report.json");
+    assert!(report_path.exists(), "baseline report written");
+    let report: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&report_path).expect("report text"))
+            .expect("report json");
+    assert_eq!(report["schema"], 1);
+    assert!(report["aggregate"]["raw_tokens"].as_u64().expect("raw") > 0);
+    assert!(
+        report["aggregate"]["delivered_tokens"]
+            .as_u64()
+            .expect("delivered")
+            > 0
+    );
 }
 
 #[test]
@@ -224,7 +250,10 @@ fn context_returns_candidates_and_accounting() {
     assert_eq!(code, 0, "{stderr}");
     assert!(stdout.contains("context:"), "{stdout}");
     assert!(stdout.contains("candidates:"), "{stdout}");
-    assert!(stdout.contains("Reduction:") || stdout.contains("Raw context:"), "{stdout}");
+    assert!(
+        stdout.contains("Reduction:") || stdout.contains("Raw context:"),
+        "{stdout}"
+    );
 
     let (code, json, stderr) = cli(&dir, &["--compact", "context", "add two numbers"]);
     assert_eq!(code, 0, "{stderr}");
@@ -280,7 +309,12 @@ fn json_errors_are_machine_readable() {
     assert_exit(code, ExitCode::Stale, &stderr);
     let value: serde_json::Value = serde_json::from_str(stderr.trim()).expect("error json");
     assert_eq!(value["exit_code"], 4);
-    assert!(value["error"].as_str().unwrap_or_default().contains("index"));
+    assert!(
+        value["error"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("index")
+    );
 }
 
 #[test]
@@ -310,10 +344,8 @@ fn init_force_flag_before_command() {
 /// Ensures the binary name target exists (compile-level wiring).
 #[test]
 fn binary_target_is_declared() {
-    let manifest = fs::read_to_string(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"),
-    )
-    .expect("Cargo.toml");
+    let manifest = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .expect("Cargo.toml");
     assert!(manifest.contains("name = \"tpt-weave\""));
     let _ = Command::new("true");
 }

@@ -48,7 +48,10 @@ pub fn run(cli: &Cli, action: CacheAction) -> Result<Rendered, CliError> {
         }
         CacheAction::Clear => {
             let removed = cache.clear()?;
-            let human = format!("cleared {removed} cache entr{}", if removed == 1 { "y" } else { "ies" });
+            let human = format!(
+                "cleared {removed} cache entr{}",
+                if removed == 1 { "y" } else { "ies" }
+            );
             Ok(Rendered::new(
                 human.clone(),
                 json!({

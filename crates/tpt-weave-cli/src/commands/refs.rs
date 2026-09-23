@@ -29,7 +29,10 @@ pub fn run(cli: &Cli, name: &str) -> Result<Rendered, CliError> {
 
     let mut human = format!("references: {}\n", refs.len());
     for (record, kind) in &refs {
-        human.push_str(&format!("{kind:?}\t{}\n", super::symbol::symbol_line(record)));
+        human.push_str(&format!(
+            "{kind:?}\t{}\n",
+            super::symbol::symbol_line(record)
+        ));
     }
 
     let json = json!({

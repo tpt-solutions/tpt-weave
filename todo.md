@@ -1,10 +1,12 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-23):** Phases 0–9 complete (repository + decisions, core model + manifest
+> **Status (2026-09-23):** Phases 0–11 complete (repository + decisions, core model + manifest
 > configuration, cargo/git/syn indexer, symbol graph, hierarchical representations + expansion,
 > deterministic context retrieval, tool output reduction, filesystem cache, JEv decision
-> provider/OpenRouter client/policy engine, MCP server with 11 tools + tool minimisation;
-> 134 tests passing, clippy `-D warnings` clean). Phases 10–20 pending.
+> provider/OpenRouter client/policy engine, MCP server with 11 tools + tool minimisation, CLI
+> with all planned subcommands + human/JSON/compact output + exit codes, evaluation harness with
+> baseline/weave captures + net-token-reduction metrics + local adopt benchmark; 178 tests
+> passing, clippy `-D warnings` clean). Phases 12–20 pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -263,44 +265,52 @@ tpt-weave stats
 tpt-weave cache
 ```
 
-- [ ] Human-readable output.
-- [ ] JSON output.
-- [ ] Machine-readable compact output.
-- [ ] Exit codes.
-- [ ] Error reporting.
+- [x] Human-readable output.
+- [x] JSON output.
+- [x] Machine-readable compact output.
+- [x] Exit codes.
+- [x] Error reporting.
 
 ## Phase 11 — Evaluation Harness
 
 ### Baseline
 
-- [ ] Capture raw agent context.
-- [ ] Capture raw token count.
-- [ ] Capture model output.
-- [ ] Capture task success.
-- [ ] Capture latency.
-- [ ] Capture cost.
+- [x] Capture raw agent context.
+- [x] Capture raw token count.
+- [x] Capture model output.
+- [x] Capture task success.
+- [x] Capture latency.
+- [x] Capture cost.
 
 ### tpt-weave
 
-- [ ] Capture selected context.
-- [ ] Capture JEv context.
-- [ ] Capture decision overhead.
-- [ ] Capture total token count.
-- [ ] Capture task success.
-- [ ] Capture latency.
-- [ ] Capture cost.
+- [x] Capture selected context.
+- [x] Capture JEv context.
+- [x] Capture decision overhead.
+- [x] Capture total token count.
+- [x] Capture task success.
+- [x] Capture latency.
+- [x] Capture cost.
 
 ### Metrics
 
-- [ ] Gross token reduction.
-- [ ] Net token reduction.
-- [ ] Cache savings.
-- [ ] JEv overhead.
-- [ ] Retrieval count.
-- [ ] Context misses.
-- [ ] Task success preservation.
-- [ ] Latency change.
-- [ ] Cost change.
+- [x] Gross token reduction.
+- [x] Net token reduction.
+- [x] Cache savings.
+- [x] JEv overhead.
+- [x] Retrieval count.
+- [x] Context misses.
+- [x] Task success preservation.
+- [x] Latency change.
+- [x] Cost change.
+
+### Wiring
+
+- [x] Local (model-free) comparison harness for adopt baseline benchmark.
+- [x] `tpt-weave init` writes standard `.tpt-weave/` `.gitignore` entries.
+- [x] `tpt-weave adopt` registers `tpt-*` cross-repository links (spec §11).
+- [x] `tpt-weave adopt` runs the baseline context benchmark and writes
+      `.tpt-weave/baseline-report.json` (spec §23/§28).
 
 ## Phase 12 — First TPT Repository Integrations
 

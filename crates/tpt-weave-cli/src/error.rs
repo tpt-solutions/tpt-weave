@@ -104,9 +104,7 @@ impl From<std::io::Error> for CliError {
 impl From<tpt_weave_core::ConfigError> for CliError {
     fn from(error: tpt_weave_core::ConfigError) -> Self {
         match error {
-            tpt_weave_core::ConfigError::Io(err)
-                if err.kind() == std::io::ErrorKind::NotFound =>
-            {
+            tpt_weave_core::ConfigError::Io(err) if err.kind() == std::io::ErrorKind::NotFound => {
                 Self::not_found(format!("manifest missing: {err}"))
             }
             other => Self::internal(other.to_string()),
@@ -120,9 +118,7 @@ impl From<tpt_weave_graph::GraphError> for CliError {
             tpt_weave_graph::GraphError::SchemaMismatch { .. } => {
                 Self::stale(format!("{error}; re-run `tpt-weave index`"))
             }
-            tpt_weave_graph::GraphError::Io(err)
-                if err.kind() == std::io::ErrorKind::NotFound =>
-            {
+            tpt_weave_graph::GraphError::Io(err) if err.kind() == std::io::ErrorKind::NotFound => {
                 Self::stale("no index found; run `tpt-weave index`")
             }
             other => Self::internal(other.to_string()),

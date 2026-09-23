@@ -13,6 +13,7 @@ members = [
     "crates/tpt-weave-openrouter",
     "crates/tpt-weave-mcp",
     "crates/tpt-weave-cli",
+    "crates/tpt-weave-eval",
 ]
 
 [workspace.package]
@@ -40,6 +41,7 @@ tpt-weave-decisions = { path = "crates/tpt-weave-decisions" }
 tpt-weave-openrouter = { path = "crates/tpt-weave-openrouter" }
 tpt-weave-mcp = { path = "crates/tpt-weave-mcp" }
 tpt-weave-cli = { path = "crates/tpt-weave-cli" }
+tpt-weave-eval = { path = "crates/tpt-weave-eval" }
 rmcp = { version = "3.4", default-features = false, features = [
     "server",
     "transport-io",

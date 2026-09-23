@@ -37,9 +37,8 @@ pub fn run(
     let expansion = match kind {
         "symbol" => expand_symbol(graph, sources, id, level)?,
         "module" => {
-            let package = package.ok_or_else(|| {
-                CliError::usage("`--kind module` requires `--package <name>`")
-            })?;
+            let package = package
+                .ok_or_else(|| CliError::usage("`--kind module` requires `--package <name>`"))?;
             expand_module(graph, sources, package, id, level)?
         }
         "dependency" => expand_dependency(graph, sources, id, level)?,

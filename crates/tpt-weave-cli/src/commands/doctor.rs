@@ -91,20 +91,12 @@ pub fn run(cli: &Cli) -> Result<Rendered, CliError> {
     // --- index freshness --------------------------------------------------
     let graph_path = graph_path(&root);
     if !graph_path.exists() {
-        checks.push(Check::fail(
-            "index",
-            "missing; run `tpt-weave index`",
-            4,
-        ));
+        checks.push(Check::fail("index", "missing; run `tpt-weave index`", 4));
     } else {
         match RepositoryGraph::load(&graph_path) {
             Ok(graph) => {
                 let mut ok = true;
-                let mut detail = format!(
-                    "schema {} @ {}",
-                    graph.schema,
-                    graph.revision.short()
-                );
+                let mut detail = format!("schema {} @ {}", graph.schema, graph.revision.short());
                 if graph.schema != SCHEMA_VERSION {
                     ok = false;
                     detail = format!(
@@ -166,7 +158,9 @@ pub fn run(cli: &Cli) -> Result<Rendered, CliError> {
                             "provider",
                             format!(
                                 "{} / {} (key env {} set)",
-                                manifest.provider.name, manifest.jev.model, manifest.provider.api_key_env
+                                manifest.provider.name,
+                                manifest.jev.model,
+                                manifest.provider.api_key_env
                             ),
                         ));
                     } else {
