@@ -6,7 +6,7 @@ use crate::schema::{Decision, DecisionOutcome, DecisionRequest};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tpt_weave_core::hash::fnv1a64;
 
 /// Confidence assigned to deterministic fallback decisions — deliberately
@@ -89,7 +89,7 @@ impl MockProvider {
 
     /// A mock that consumes `script` before repeating `default`.
     pub fn with_script(default: Decision, script: impl IntoIterator<Item = Decision>) -> Self {
-        let mut provider = Self::new(default);
+        let provider = Self::new(default);
         *provider.script.lock().unwrap_or_else(|e| e.into_inner()) =
             script.into_iter().collect();
         provider
