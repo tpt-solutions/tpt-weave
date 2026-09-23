@@ -1,10 +1,10 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-23):** Phases 0–8 complete (repository + decisions, core model + manifest
+> **Status (2026-09-23):** Phases 0–9 complete (repository + decisions, core model + manifest
 > configuration, cargo/git/syn indexer, symbol graph, hierarchical representations + expansion,
 > deterministic context retrieval, tool output reduction, filesystem cache, JEv decision
-> provider/OpenRouter client/policy engine; 118 tests passing, clippy `-D warnings` clean).
-> Phases 9–20 pending.
+> provider/OpenRouter client/policy engine, MCP server with 11 tools + tool minimisation;
+> 134 tests passing, clippy `-D warnings` clean). Phases 10–20 pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -224,25 +224,25 @@
 
 ## Phase 9 — MCP
 
-- [ ] Define MCP server.
-- [ ] Add tpt_repo_overview.
-- [ ] Add tpt_find_symbol.
-- [ ] Add tpt_find_references.
-- [ ] Add tpt_get_signature.
-- [ ] Add tpt_get_skeleton.
-- [ ] Add tpt_expand.
-- [ ] Add tpt_dependencies.
-- [ ] Add tpt_related.
-- [ ] Add tpt_git_diff.
-- [ ] Add tpt_test_result.
-- [ ] Add tpt_context_stats.
+- [x] Define MCP server.
+- [x] Add tpt_repo_overview.
+- [x] Add tpt_find_symbol.
+- [x] Add tpt_find_references.
+- [x] Add tpt_get_signature.
+- [x] Add tpt_get_skeleton.
+- [x] Add tpt_expand.
+- [x] Add tpt_dependencies.
+- [x] Add tpt_related.
+- [x] Add tpt_git_diff.
+- [x] Add tpt_test_result.
+- [x] Add tpt_context_stats.
 
 ### Tool minimisation
 
-- [ ] Investigate dynamic tool exposure.
-- [ ] Avoid sending unnecessary schemas.
-- [ ] Measure MCP schema overhead.
-- [ ] Add compact tool descriptions.
+- [x] Investigate dynamic tool exposure.
+- [x] Avoid sending unnecessary schemas.
+- [x] Measure MCP schema overhead.
+- [x] Add compact tool descriptions.
 
 ## Phase 10 — CLI
 

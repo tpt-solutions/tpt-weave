@@ -7,11 +7,11 @@ workspaces deterministically, builds hierarchical source representations, and de
 coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
 information required to complete the task correctly.
 
-> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–8 of
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–9 of
 > [todo.md](todo.md) are complete (repository scaffold, architecture decisions, core types and
 > configuration, indexer, symbol graph, hierarchical representations, deterministic context
 > retrieval, tool output reduction, filesystem cache, JEv decision provider + OpenRouter client +
-> policy engine). All other phases are pending.
+> policy engine, MCP server with 11 tools and tool minimisation). All other phases are pending.
 
 ## Core principle
 
@@ -36,7 +36,8 @@ Start as one repository with a workspace (spec §25):
 | `crates/tpt-weave-cache` | Phase 7 done | Filesystem cache: revision/schema keys, invalidation, clear, statistics |
 | `crates/tpt-weave-decisions` | Phase 8 done | DecisionProvider trait, mock/fallback providers, JEv categories, policy engine, decision log |
 | `crates/tpt-weave-openrouter` | Phase 8 done | OpenRouter Decisions API (JEv) blocking client: retries, timeouts, usage/confidence |
-| `crates/tpt-weave-mcp` … `crates/tpt-weave-eval` | planned | MCP, CLI, eval (spec §25) |
+| `crates/tpt-weave-mcp` | Phase 9 done | MCP server (stdio): 11 tools, dynamic tool filter, compact schemas |
+| `crates/tpt-weave-cli` … `crates/tpt-weave-eval` | planned | CLI, eval (spec §25) |
 
 ## Quick start
 

@@ -11,6 +11,8 @@ members = [
     "crates/tpt-weave-cache",
     "crates/tpt-weave-decisions",
     "crates/tpt-weave-openrouter",
+    "crates/tpt-weave-mcp",
+    "crates/tpt-weave-cli",
 ]
 
 [workspace.package]
@@ -36,6 +38,13 @@ tpt-weave-tools = { path = "crates/tpt-weave-tools" }
 tpt-weave-cache = { path = "crates/tpt-weave-cache" }
 tpt-weave-decisions = { path = "crates/tpt-weave-decisions" }
 tpt-weave-openrouter = { path = "crates/tpt-weave-openrouter" }
+tpt-weave-mcp = { path = "crates/tpt-weave-mcp" }
+tpt-weave-cli = { path = "crates/tpt-weave-cli" }
+rmcp = { version = "3.4", default-features = false, features = [
+    "server",
+    "transport-io",
+] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 reqwest = { version = "0.12", default-features = false, features = [
     "blocking",
     "json",

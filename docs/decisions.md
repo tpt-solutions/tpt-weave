@@ -5,14 +5,19 @@ Spec references point to [spec.md](../spec.md).
 
 ## 1. MSRV (Minimum Supported Rust Version)
 
-**Decision:** MSRV is **Rust 1.85.0**.
+**Decision:** MSRV is **Rust 1.85.0** for library crates; `tpt-weave-mcp` may require a newer
+toolchain (rmcp 3.x declares `rust-version = "1.88"`).
 
 - Enforced with `rust-version = "1.85"` in `[workspace.package]`; `cargo` fails fast on older toolchains.
-- The environment toolchain (1.97.x) is used for development; CI (Phase 20) will run an MSRV job.
+- The environment toolchain (1.97.x) is used for development; CI runs an MSRV job that builds
+  `--workspace --exclude tpt-weave-mcp` (the MCP binary is `publish = false` and not part of the
+  published library surface).
 - MSRV bumps are explicit release notes events: minor bumps pre-1.0, major bumps post-1.0.
 
 **Rationale:** 1.85 is the first stable release of the 2024 edition line, giving a modern baseline
-(async traits, `OnceLock`, current trait upcasting) without chasing the latest compiler.
+(async traits, `OnceLock`, current trait upcasting) without chasing the latest compiler. Keeping
+the MCP server out of the MSRV gate preserves that baseline for libraries while letting the binary
+track rmcp's requirement.
 
 ## 2. Supported Rust editions
 

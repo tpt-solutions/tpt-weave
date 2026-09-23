@@ -44,5 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85
       - uses: Swatinem/rust-cache@v2
+      # rmcp 3.x requires Rust 1.88; the mcp binary is publish = false and
+      # excluded so library crates keep MSRV 1.85 (docs/decisions.md §1).
       - name: Build
-        run: cargo build --workspace
+        run: cargo build --workspace --exclude tpt-weave-mcp

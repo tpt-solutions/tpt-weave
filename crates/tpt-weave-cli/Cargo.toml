@@ -1,0 +1,29 @@
+[package]
+name = "tpt-weave-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "tpt-weave command-line interface"
+# Publication happens in Phase 20 (todo.md); prevent accidental publishes.
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tpt-weave-core.workspace = true
+tpt-weave-index.workspace = true
+tpt-weave-rust.workspace = true
+tpt-weave-graph.workspace = true
+tpt-weave-context.workspace = true
+tpt-weave-tools.workspace = true
+tpt-weave-cache.workspace = true
+
+[lib]
+name = "tpt_weave_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tpt-weave"
+path = "src/main.rs"
