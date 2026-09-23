@@ -2,10 +2,10 @@
 //! and 16): lookups, relevance scoring, ordering, deduplication and
 //! budgeting.
 
+use crate::ContextError;
 use crate::expand::{related_keys, test_keys};
 use crate::levels::{estimate_tokens, file_records, represent_file};
 use crate::sources::SourceProvider;
-use crate::ContextError;
 use std::collections::{BTreeMap, BTreeSet};
 use tpt_weave_core::{
     ContextCandidate, ContextId, ContextLevel, ContextRequest, ContextResponse, ContextSource,
@@ -113,12 +113,7 @@ impl<'a> Retriever<'a> {
     /// (case-insensitive; empty query matches everything), sorted.
     pub fn find_files(&self, query: &str) -> Vec<String> {
         let query = query.to_lowercase();
-        let mut paths: Vec<String> = self
-            .graph
-            .symbols
-            .iter()
-            .map(|s| s.file.clone())
-            .collect();
+        let mut paths: Vec<String> = self.graph.symbols.iter().map(|s| s.file.clone()).collect();
         paths.sort();
         paths.dedup();
         paths.retain(|path| path.to_lowercase().contains(&query));
@@ -417,8 +412,10 @@ impl<'a> Retriever<'a> {
                 }
             }
         }
-        let delivered: Vec<ContextCandidate> =
-            selected.iter().map(|&index| candidates[index].clone()).collect();
+        let delivered: Vec<ContextCandidate> = selected
+            .iter()
+            .map(|&index| candidates[index].clone())
+            .collect();
         let selected_tokens: u64 = delivered.iter().map(|c| u64::from(c.token_estimate)).sum();
         raw = raw.max(selected_tokens);
         let tokens = TokenAccounting::new(raw, selected_tokens, 0, 0, false);
@@ -515,8 +512,7 @@ fn select_within_budget(candidates: &[ContextCandidate], budget: u32) -> Vec<usi
                     continue;
                 }
                 if let ContextSource::File(path) = &candidates[other].source {
-                    if *path == symbol_file && candidates[other].level >= ContextLevel::Signatures
-                    {
+                    if *path == symbol_file && candidates[other].level >= ContextLevel::Signatures {
                         taken[index] = false;
                         excluded[index] = true;
                         used = used.saturating_sub(candidates[index].token_estimate);

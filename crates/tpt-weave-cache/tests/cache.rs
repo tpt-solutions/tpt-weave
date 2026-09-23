@@ -3,8 +3,8 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tpt_weave_cache::{cache_root, CacheKey, CacheKind, FilesystemCache};
-use tpt_weave_core::{ContextLevel, RepositoryId, Revision, MANIFEST_DIR, SCHEMA_VERSION};
+use tpt_weave_cache::{CacheKey, CacheKind, FilesystemCache, cache_root};
+use tpt_weave_core::{ContextLevel, MANIFEST_DIR, RepositoryId, Revision, SCHEMA_VERSION};
 
 /// Sample cached value.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -63,11 +63,16 @@ fn cache_keys_cover_schema_revision_query_policy_and_level() {
 
     // Spec.md section 15: revision, schema, query, policy, level all
     // participate in the key.
-    let base = CacheKey::context_selection(&revision, "fix bug", "budget=12000", ContextLevel::Skeleton);
+    let base =
+        CacheKey::context_selection(&revision, "fix bug", "budget=12000", ContextLevel::Skeleton);
     let different_revision =
         CacheKey::context_selection(&other, "fix bug", "budget=12000", ContextLevel::Skeleton);
-    let different_query =
-        CacheKey::context_selection(&revision, "other task", "budget=12000", ContextLevel::Skeleton);
+    let different_query = CacheKey::context_selection(
+        &revision,
+        "other task",
+        "budget=12000",
+        ContextLevel::Skeleton,
+    );
     let different_policy =
         CacheKey::context_selection(&revision, "fix bug", "budget=4000", ContextLevel::Skeleton);
     let different_level =
@@ -81,7 +86,10 @@ fn cache_keys_cover_schema_revision_query_policy_and_level() {
         different_level.digest(),
     ];
     // Schema is baked into every canonical form.
-    assert!(base.canonical().contains(&format!("\"schema\":{SCHEMA_VERSION}")));
+    assert!(
+        base.canonical()
+            .contains(&format!("\"schema\":{SCHEMA_VERSION}"))
+    );
     digests.sort();
     digests.dedup();
     assert_eq!(digests.len(), 5, "every dimension must change the digest");
@@ -94,7 +102,13 @@ fn cache_keys_cover_schema_revision_query_policy_and_level() {
     assert_ne!(lookup.digest(), skeleton.digest());
     assert_ne!(
         CacheKey::skeleton(&revision, "src/lib.rs", "make", ContextLevel::Skeleton).digest(),
-        CacheKey::skeleton(&revision, "src/lib.rs", "make", ContextLevel::Implementation).digest()
+        CacheKey::skeleton(
+            &revision,
+            "src/lib.rs",
+            "make",
+            ContextLevel::Implementation
+        )
+        .digest()
     );
     assert_ne!(
         CacheKey::tool_reduction("cargo test", "output a").digest(),
@@ -230,7 +244,10 @@ fn reports_statistics_over_counters_and_disk() {
     cache.put(&index, &sample("index")).expect("put");
     cache.put(&lookup, &sample("lookup")).expect("put");
 
-    assert_eq!(cache.get::<Sample>(&lookup).expect("get"), Some(sample("lookup")));
+    assert_eq!(
+        cache.get::<Sample>(&lookup).expect("get"),
+        Some(sample("lookup"))
+    );
     assert_eq!(
         cache
             .get::<Sample>(&CacheKey::symbol_lookup(&revision, "nope"))

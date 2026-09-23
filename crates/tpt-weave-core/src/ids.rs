@@ -210,8 +210,7 @@ mod tests {
 
     #[test]
     fn revision_short_truncates_hex_and_is_boundary_safe() {
-        let rev =
-            Revision::new("0123456789abcdef0123456789abcdef01234567").with_branch("main");
+        let rev = Revision::new("0123456789abcdef0123456789abcdef01234567").with_branch("main");
         assert_eq!(rev.short(), "0123456789ab");
         assert_eq!(rev.branch.as_deref(), Some("main"));
         assert_eq!(rev.to_string(), "0123456789ab");
@@ -255,4 +254,3 @@ mod tests {
         assert!(a.as_str().starts_with("ctx:"));
     }
 }
-

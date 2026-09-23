@@ -1,9 +1,7 @@
 //! Tool-output reduction (todo.md Phase 6, spec.md section 14).
 
 use std::fs;
-use tpt_weave_tools::{
-    reduce, RawStore, Reduction, ReductionStatus, ToolKind, ToolOutput,
-};
+use tpt_weave_tools::{RawStore, Reduction, ReductionStatus, ToolKind, ToolOutput, reduce};
 
 /// Big passing `cargo test` run: many harness lines, zero failures.
 fn cargo_test_success() -> String {
@@ -170,7 +168,10 @@ fn reduces_clean_check_and_clippy() {
 
     let clippy = reduce(
         ToolKind::CargoClippy,
-        &ToolOutput::new("cargo clippy", "warning: 3 warnings emitted\n    Finished\n"),
+        &ToolOutput::new(
+            "cargo clippy",
+            "warning: 3 warnings emitted\n    Finished\n",
+        ),
     );
     assert!(clippy.render().starts_with("CLIPPY OK"));
     // Bare `warning:` lines without `-->` still parse as diagnostics.
@@ -207,7 +208,10 @@ fn reduces_fmt_diffs() {
 #[test]
 fn reduces_git_status_porcelain_and_long_form() {
     let porcelain = "## main...origin/main\n M src/lib.rs\nA  src/new.rs\n?? tests/x.rs\n D old.rs\nR  old.rs -> new.rs\n";
-    let reduction = reduce(ToolKind::GitStatus, &ToolOutput::new("git status", porcelain));
+    let reduction = reduce(
+        ToolKind::GitStatus,
+        &ToolOutput::new("git status", porcelain),
+    );
     let rendered = reduction.render();
     assert!(rendered.contains("files: 5"), "{rendered}");
     assert!(rendered.contains("modified: 1"));
@@ -219,7 +223,10 @@ fn reduces_git_status_porcelain_and_long_form() {
     assert!(!reduction.failed());
 
     let long_form = "On branch main\nChanges to be committed:\n  (use \"git restore --staged ...\"\n\tnew file:   staged.rs\nChanges not staged for commit:\n  (use \"git add ...\")\n\tmodified:   dirty.rs\nUntracked files:\n  (use \"git add ...\")\n\tfresh.rs\n";
-    let reduction = reduce(ToolKind::GitStatus, &ToolOutput::new("git status", long_form));
+    let reduction = reduce(
+        ToolKind::GitStatus,
+        &ToolOutput::new("git status", long_form),
+    );
     let rendered = reduction.render();
     assert!(rendered.contains("added: 1"), "{rendered}");
     assert!(rendered.contains("modified: 1"));
@@ -265,7 +272,10 @@ fn reduces_file_listings_to_histograms() {
     }
     raw.push_str("Cargo.toml\nREADME.md\ntarget/\n");
 
-    let reduction = reduce(ToolKind::FileListing, &ToolOutput::new("find . -type f", raw));
+    let reduction = reduce(
+        ToolKind::FileListing,
+        &ToolOutput::new("find . -type f", raw),
+    );
     let rendered = reduction.render();
     assert!(rendered.starts_with("FILE LISTING"), "{rendered}");
     assert!(rendered.contains("files: 182"));
@@ -312,10 +322,7 @@ fn reduces_json_documents_to_their_shape() {
     assert!(rendered.contains("nested: {…}"));
     assert!(rendered.contains("…\""));
 
-    let array = reduce(
-        ToolKind::Json,
-        &ToolOutput::new("jq .", "[1,2,3,4]"),
-    );
+    let array = reduce(ToolKind::Json, &ToolOutput::new("jq .", "[1,2,3,4]"));
     assert!(array.render().contains("JSON array"));
     assert!(array.render().contains("length: 4"));
 
@@ -365,10 +372,7 @@ fn falls_back_to_diagnostics_when_tests_fail_to_compile() {
 
 #[test]
 fn stores_raw_output_and_expands_it_back() {
-    let temp = std::env::temp_dir().join(format!(
-        "tpt-weave-tools-test-{}",
-        std::process::id()
-    ));
+    let temp = std::env::temp_dir().join(format!("tpt-weave-tools-test-{}", std::process::id()));
     let _ = fs::remove_dir_all(&temp);
     let store = RawStore::new(&temp);
 
@@ -428,12 +432,24 @@ fn exit_code_without_output_becomes_a_failure() {
 
 #[test]
 fn infers_tool_kinds_from_commands() {
-    assert_eq!(ToolKind::infer("cargo test --workspace"), ToolKind::CargoTest);
+    assert_eq!(
+        ToolKind::infer("cargo test --workspace"),
+        ToolKind::CargoTest
+    );
     assert_eq!(ToolKind::infer("cargo check"), ToolKind::CargoCheck);
-    assert_eq!(ToolKind::infer("cargo clippy -- -D warnings"), ToolKind::CargoClippy);
-    assert_eq!(ToolKind::infer("cargo build --release"), ToolKind::CargoBuild);
+    assert_eq!(
+        ToolKind::infer("cargo clippy -- -D warnings"),
+        ToolKind::CargoClippy
+    );
+    assert_eq!(
+        ToolKind::infer("cargo build --release"),
+        ToolKind::CargoBuild
+    );
     assert_eq!(ToolKind::infer("cargo fmt --check"), ToolKind::CargoFmt);
-    assert_eq!(ToolKind::infer("git status --porcelain"), ToolKind::GitStatus);
+    assert_eq!(
+        ToolKind::infer("git status --porcelain"),
+        ToolKind::GitStatus
+    );
     assert_eq!(ToolKind::infer("git diff --stat"), ToolKind::GitDiff);
     assert_eq!(ToolKind::infer("rg make"), ToolKind::Search);
     assert_eq!(ToolKind::infer("grep -rn make src"), ToolKind::Search);

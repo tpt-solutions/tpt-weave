@@ -53,14 +53,7 @@ pub(crate) fn test_output(text: &str, exit_code: i32) -> (Vec<String>, Reduction
     let total = passed + failed;
     let success = failed == 0 && exit_code == 0;
     let mut lines = Vec::new();
-    lines.push(
-        if success {
-            "TEST OK"
-        } else {
-            "TEST FAILURE"
-        }
-        .to_string(),
-    );
+    lines.push(if success { "TEST OK" } else { "TEST FAILURE" }.to_string());
     lines.push(format!("tests: {total}"));
     lines.push(format!("passed: {passed}"));
     lines.push(format!("failed: {failed}"));
@@ -280,10 +273,7 @@ pub(crate) fn fmt_output(text: &str, exit_code: i32) -> (Vec<String>, ReductionS
     let count = files.len();
     let success = count == 0 && exit_code == 0;
     let mut lines = Vec::new();
-    lines.push(format!(
-        "FMT {}",
-        if success { "OK" } else { "FAILURE" }
-    ));
+    lines.push(format!("FMT {}", if success { "OK" } else { "FAILURE" }));
     lines.push(format!("files needing format: {count}"));
     if count > 0 {
         lines.push("FORMAT:".to_string());

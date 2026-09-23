@@ -20,7 +20,11 @@ fn summarises_the_repository_overview() {
     assert!(overview.modules >= 2, "inner + tests modules");
     assert_eq!(overview.dependencies, 3, "tpt-math, serde, tpt-cv");
     assert_eq!(
-        overview.external_repositories.iter().map(|r| r.as_str()).collect::<Vec<_>>(),
+        overview
+            .external_repositories
+            .iter()
+            .map(|r| r.as_str())
+            .collect::<Vec<_>>(),
         vec!["tpt-cv"]
     );
 
@@ -94,7 +98,10 @@ fn supports_each_lookup() {
     assert!(tests.iter().any(|r| r.id.name == "test_make"));
 
     let err = retriever.find_related("missing").expect_err("unknown");
-    assert!(matches!(err, tpt_weave_context::ContextError::UnknownSymbol(_)));
+    assert!(matches!(
+        err,
+        tpt_weave_context::ContextError::UnknownSymbol(_)
+    ));
 }
 
 #[test]
@@ -104,9 +111,7 @@ fn retrieves_budgeted_deterministic_context() {
     let retriever = Retriever::new(&graph, &sources);
 
     let request = ContextRequest::new("demo-repo", "fix the make pixel bug");
-    let response = retriever
-        .retrieve(&request, &[])
-        .expect("retrieval");
+    let response = retriever.retrieve(&request, &[]).expect("retrieval");
 
     // Deterministic: identical request → identical response.
     let again = retriever.retrieve(&request, &[]).expect("retrieval");
@@ -142,9 +147,10 @@ fn retrieves_budgeted_deterministic_context() {
         .expect("src/lib.rs selected");
     assert!(file.level >= ContextLevel::Signatures);
     assert!(file.score.unwrap_or(0.0) > 0.0);
-    let lib_has_symbol_anchor = response.candidates.iter().any(|c| {
-        matches!(&c.source, ContextSource::Symbol(id) if id.name == "make")
-    });
+    let lib_has_symbol_anchor = response
+        .candidates
+        .iter()
+        .any(|c| matches!(&c.source, ContextSource::Symbol(id) if id.name == "make"));
     assert!(
         !lib_has_symbol_anchor || file.level < ContextLevel::Signatures,
         "symbol anchor should be subsumed by its file"
@@ -210,7 +216,10 @@ fn boosts_changed_files_and_honours_options() {
             _ => None,
         })
         .expect("file present without boost");
-    assert!(boosted_score > plain_score, "{boosted_score} <= {plain_score}");
+    assert!(
+        boosted_score > plain_score,
+        "{boosted_score} <= {plain_score}"
+    );
 
     // Dependencies are opt-in.
     let with_deps = ContextRequest::new("demo-repo", "tpt-math square");
@@ -240,8 +249,7 @@ fn tiny_budget_still_delivers_the_overview() {
 
     // Exactly enough budget for the overview: it is admitted first and
     // larger candidates cannot crowd it out.
-    let request = ContextRequest::new("demo-repo", "make")
-        .with_budget_tokens(overview_tokens);
+    let request = ContextRequest::new("demo-repo", "make").with_budget_tokens(overview_tokens);
     let response = retriever.retrieve(&request, &[]).expect("retrieval");
     assert!(response.total_tokens() <= u64::from(overview_tokens));
     assert!(

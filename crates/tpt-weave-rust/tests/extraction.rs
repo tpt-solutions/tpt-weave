@@ -1,7 +1,7 @@
 //! Extraction of every symbol kind requested by todo.md Phase 2.
 
 use tpt_weave_core::{RepositoryId, SymbolKind};
-use tpt_weave_rust::{parse_file, FileInput, ParsedFile, SymbolRecord, Visibility};
+use tpt_weave_rust::{FileInput, ParsedFile, SymbolRecord, Visibility, parse_file};
 
 const SAMPLE: &str = r#"
 #[derive(Clone, Debug)]

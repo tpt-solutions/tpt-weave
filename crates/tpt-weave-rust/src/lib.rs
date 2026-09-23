@@ -24,7 +24,6 @@ pub mod record;
 pub mod skeleton;
 
 pub use mentions::{Mention, MentionKind};
-pub use parse::{parse_file, FileInput, ParseError, ParsedFile};
+pub use parse::{FileInput, ParseError, ParsedFile, parse_file};
 pub use record::{SymbolRecord, Visibility};
-pub use skeleton::{skeleton, skeleton_with, Skeleton, BODY_PLACEHOLDER};
-
+pub use skeleton::{BODY_PLACEHOLDER, Skeleton, skeleton, skeleton_with};

@@ -90,8 +90,7 @@ impl MockProvider {
     /// A mock that consumes `script` before repeating `default`.
     pub fn with_script(default: Decision, script: impl IntoIterator<Item = Decision>) -> Self {
         let provider = Self::new(default);
-        *provider.script.lock().unwrap_or_else(|e| e.into_inner()) =
-            script.into_iter().collect();
+        *provider.script.lock().unwrap_or_else(|e| e.into_inner()) = script.into_iter().collect();
         provider
     }
 

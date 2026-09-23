@@ -2,11 +2,11 @@
 
 #![allow(dead_code)]
 
+use tpt_weave_context::Sources;
 use tpt_weave_core::{RepositoryId, Revision};
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph};
 use tpt_weave_index::CargoIndex;
-use tpt_weave_rust::{parse_file, FileInput, ParsedFile};
-use tpt_weave_context::Sources;
+use tpt_weave_rust::{FileInput, ParsedFile, parse_file};
 
 /// Two workspace packages: `demo` (with `tests/integration.rs`) depends on
 /// internal `tpt-math`, unlinked external `serde`, and linkable external
@@ -125,7 +125,10 @@ pub fn build() -> RepositoryGraph {
     GraphBuilder::new("demo-repo", revision, cargo)
         .add_file("demo", parse("demo", "src/lib.rs", SRC_LIB))
         .add_file("demo", parse("demo", "tests/integration.rs", SRC_TEST))
-        .add_file("tpt-math", parse("tpt-math", "crates/tpt-math/src/lib.rs", SRC_MATH))
+        .add_file(
+            "tpt-math",
+            parse("tpt-math", "crates/tpt-math/src/lib.rs", SRC_MATH),
+        )
         .link_cross_repository("tpt-cv", "tpt-cv")
         .build()
 }

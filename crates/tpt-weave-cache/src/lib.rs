@@ -15,4 +15,4 @@ mod store;
 
 pub use key::{CacheKey, CacheKeyData, CacheKind};
 pub use stats::CacheStatistics;
-pub use store::{cache_root, CacheError, FilesystemCache, CACHE_DIR};
+pub use store::{CACHE_DIR, CacheError, FilesystemCache, cache_root};

@@ -3,11 +3,11 @@
 
 use crate::key::{CacheKey, CacheKeyData, CacheKind};
 use crate::stats::CacheStatistics;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use tpt_weave_core::{Revision, MANIFEST_DIR, SCHEMA_VERSION};
+use tpt_weave_core::{MANIFEST_DIR, Revision, SCHEMA_VERSION};
 
 /// Subdirectory of `.tpt-weave/` holding cache entries.
 pub const CACHE_DIR: &str = "cache";
@@ -158,8 +158,7 @@ impl FilesystemCache {
                         .map(|entry| {
                             entry.key.schema == SCHEMA_VERSION
                                 && (entry.key.revision.is_none()
-                                    || entry.key.revision.as_deref()
-                                        == Some(revision.sha.as_str()))
+                                    || entry.key.revision.as_deref() == Some(revision.sha.as_str()))
                         })
                         .unwrap_or(false);
                     if !keep && fs::remove_file(&path).is_ok() {

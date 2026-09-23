@@ -16,13 +16,10 @@ pub mod ids;
 pub mod tokens;
 
 pub use config::{
-    manifest_path, ConfigError, ContextConfig, FeaturesConfig, JevConfig, Manifest, PrivacyConfig,
-    ProviderConfig, DEFAULT_CONTEXT_BUDGET, MANIFEST_DIR, MANIFEST_FILE,
-    MAXIMUM_CONTEXT_BUDGET,
+    ConfigError, ContextConfig, DEFAULT_CONTEXT_BUDGET, FeaturesConfig, JevConfig, MANIFEST_DIR,
+    MANIFEST_FILE, MAXIMUM_CONTEXT_BUDGET, Manifest, PrivacyConfig, ProviderConfig, manifest_path,
 };
-pub use context::{
-    ContextCandidate, ContextLevel, ContextRequest, ContextResponse, ContextSource,
-};
+pub use context::{ContextCandidate, ContextLevel, ContextRequest, ContextResponse, ContextSource};
 pub use files::{FileRecord, SourceLanguage};
 pub use ids::{ContextId, RepositoryId, Revision, SymbolId, SymbolKind};
 pub use tokens::TokenAccounting;

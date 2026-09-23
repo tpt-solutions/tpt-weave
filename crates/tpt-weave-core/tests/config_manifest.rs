@@ -1,18 +1,16 @@
 //! Manifest load/save/validate and privacy exclusion behaviour.
 
-use tpt_weave_core::{manifest_path, ConfigError, Manifest, SCHEMA_VERSION};
 use std::path::PathBuf;
+use tpt_weave_core::{ConfigError, Manifest, SCHEMA_VERSION, manifest_path};
 
 fn temp_manifest_path(tag: &str) -> PathBuf {
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    std::env::temp_dir().join(format!(
-        "tpt-weave-{}-{tag}-{nanos}",
-        std::process::id()
-    ))
-    .join("manifest.toml")
+    std::env::temp_dir()
+        .join(format!("tpt-weave-{}-{tag}-{nanos}", std::process::id()))
+        .join("manifest.toml")
 }
 
 #[test]

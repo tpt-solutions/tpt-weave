@@ -15,10 +15,7 @@ pub enum IndexError {
     /// Failed to spawn or run `cargo`.
     Io(std::io::Error),
     /// `cargo metadata` exited non-zero (e.g. no `Cargo.toml`).
-    CommandFailed {
-        status: Option<i32>,
-        stderr: String,
-    },
+    CommandFailed { status: Option<i32>, stderr: String },
     /// The JSON could not be parsed.
     Parse(serde_json::Error),
     /// The metadata document is a format this build does not understand.
@@ -235,8 +232,7 @@ impl CargoIndex {
         if raw.version != 1 {
             return Err(IndexError::UnsupportedFormat(raw.version));
         }
-        let member_ids: HashSet<&str> =
-            raw.workspace_members.iter().map(String::as_str).collect();
+        let member_ids: HashSet<&str> = raw.workspace_members.iter().map(String::as_str).collect();
 
         let mut workspace_members: Vec<String> = Vec::new();
         let mut packages = Vec::new();
@@ -306,9 +302,7 @@ impl CargoIndex {
 
     /// Every optional (`optional = true`) dependency with its package
     /// (todo.md Phase 2: "Detect optional dependencies").
-    pub fn optional_dependencies(
-        &self,
-    ) -> impl Iterator<Item = (&PackageIndex, &DependencyIndex)> {
+    pub fn optional_dependencies(&self) -> impl Iterator<Item = (&PackageIndex, &DependencyIndex)> {
         self.packages
             .iter()
             .flat_map(|pkg| pkg.optional_dependencies().map(move |dep| (pkg, dep)))
@@ -399,6 +393,3 @@ mod tests {
         assert!(matches!(err, IndexError::Parse(_)));
     }
 }
-
-
-

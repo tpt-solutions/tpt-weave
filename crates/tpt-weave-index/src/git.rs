@@ -17,10 +17,7 @@ pub enum GitError {
     /// `git` reported no repository at or above the given path.
     NotARepository(PathBuf),
     /// `git` exited non-zero for any other reason.
-    CommandFailed {
-        status: Option<i32>,
-        stderr: String,
-    },
+    CommandFailed { status: Option<i32>, stderr: String },
 }
 
 impl std::fmt::Display for GitError {
@@ -147,10 +144,7 @@ impl GitRepository {
     /// Working-tree status: staged, unstaged and untracked files
     /// ("Detect modified files").
     pub fn status(&self) -> Result<Vec<FileStatus>, GitError> {
-        let stdout = git_stdout(
-            &self.root,
-            &["status", "--porcelain=v1", "-z", "-uall"],
-        )?;
+        let stdout = git_stdout(&self.root, &["status", "--porcelain=v1", "-z", "-uall"])?;
         let mut entries = Vec::new();
         let mut records = stdout.split('\0');
         while let Some(record) = records.next() {
@@ -215,11 +209,7 @@ impl GitRepository {
 
     /// History lookup (todo.md Phase 2: "Add optional history lookup"):
     /// newest-first commits, optionally restricted to one path.
-    pub fn history(
-        &self,
-        limit: usize,
-        path: Option<&str>,
-    ) -> Result<Vec<CommitInfo>, GitError> {
+    pub fn history(&self, limit: usize, path: Option<&str>) -> Result<Vec<CommitInfo>, GitError> {
         if limit == 0 {
             return Ok(Vec::new());
         }
@@ -273,10 +263,7 @@ fn classify_porcelain(xy: &str) -> (ChangeStatus, bool, bool) {
     }
     let staged = x != b' ';
     let unstaged = y != b' ';
-    let unmerged = x == b'U'
-        || y == b'U'
-        || (x == b'A' && y == b'A')
-        || (x == b'D' && y == b'D');
+    let unmerged = x == b'U' || y == b'U' || (x == b'A' && y == b'A') || (x == b'D' && y == b'D');
     if unmerged {
         return (ChangeStatus::Unmerged, staged, unstaged);
     }
@@ -342,5 +329,3 @@ fn parse_log_line(line: &str) -> Option<CommitInfo> {
         subject: parts.next().unwrap_or("").to_string(),
     })
 }
-
-

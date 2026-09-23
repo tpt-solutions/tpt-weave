@@ -104,3 +104,19 @@ tpt-weave cache [status|clear]      # cache management (default: status)
 - Pre-1.0: breaking changes to stable-by-intent APIs bump the minor version and are listed in release
   notes; post-1.0 they require a major bump.
 - Non-Rust surfaces follow §4: index/MCP/CLI each carry their own version, independent of crate semver.
+
+## 7. Decision provider is synchronous (blocking)
+
+**Decision:** `DecisionProvider::decide` is a blocking call (`reqwest::blocking`); no async runtime
+in the decision path (Phase 8).
+
+- `tpt-weave-openrouter` depends on `reqwest` with `default-features = false` +
+  `blocking`/`json`/`rustls-tls`; no tokio/hyper runtime is pulled into the library surface.
+- Spec §18's provider sketch is async; the deviation is deliberate — decisions are single short
+  HTTP calls (default timeout 5 s, `jev.timeout_ms`), made from sync code paths (CLI, retrieval,
+  MCP handlers). Async can be layered on later without changing the trait consumers see if we
+  introduce a separate `AsyncDecisionProvider`.
+- Retries: exponential backoff from a configurable base (`.with_backoff`, tests use zero) over
+  transport failures and retryable statuses (429, 500, 502, 503, 524, 529); 400/401/402/403/404
+  fail immediately. API keys are read from the env var named by `[provider] api_key_env` only
+  (§5: never stored in the manifest).

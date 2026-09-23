@@ -6,7 +6,7 @@
 //! symbols can be kept ([`skeleton_with`]) to produce level-4 targeted
 //! implementation views.
 
-use crate::parse::{type_name, FileInput, ParseError};
+use crate::parse::{FileInput, ParseError, type_name};
 use proc_macro2::Span;
 use std::cmp::Reverse;
 use syn::spanned::Spanned;

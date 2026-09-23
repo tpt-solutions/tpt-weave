@@ -1,12 +1,12 @@
 //! Hierarchical representation rendering (todo.md Phase 4, spec.md section 9).
 
-use crate::sources::SourceProvider;
 use crate::ContextError;
+use crate::sources::SourceProvider;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use tpt_weave_core::{ContextLevel, SymbolKind};
 use tpt_weave_graph::RepositoryGraph;
-use tpt_weave_rust::{skeleton, skeleton_with, FileInput, SymbolRecord};
+use tpt_weave_rust::{FileInput, SymbolRecord, skeleton, skeleton_with};
 
 /// Which symbols receive a full implementation at level 4 (canonical keys).
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -106,14 +106,18 @@ pub fn represent_file(
         }
         ContextLevel::Symbols => listing(&records, display_name),
         ContextLevel::Signatures => listing(&records, |record| record.signature.clone()),
-        ContextLevel::Skeleton => skeleton(&input, source_of(sources, path)?)
+        ContextLevel::Skeleton => {
+            skeleton(&input, source_of(sources, path)?)
+                .map_err(|error| map_parse(path, error))?
+                .text
+        }
+        ContextLevel::Implementation => {
+            skeleton_with(&input, source_of(sources, path)?, |id| {
+                selection.contains(&id.canonical_key())
+            })
             .map_err(|error| map_parse(path, error))?
-            .text,
-        ContextLevel::Implementation => skeleton_with(&input, source_of(sources, path)?, |id| {
-            selection.contains(&id.canonical_key())
-        })
-        .map_err(|error| map_parse(path, error))?
-        .text,
+            .text
+        }
         ContextLevel::Full => source_of(sources, path)?.to_string(),
     };
 
@@ -153,10 +157,7 @@ fn derive_module_prefix(records: &[&SymbolRecord]) -> Vec<String> {
         .collect()
 }
 
-fn source_of<'a>(
-    sources: &'a dyn SourceProvider,
-    path: &str,
-) -> Result<&'a str, ContextError> {
+fn source_of<'a>(sources: &'a dyn SourceProvider, path: &str) -> Result<&'a str, ContextError> {
     sources
         .source(path)
         .ok_or_else(|| ContextError::MissingSource(path.to_string()))
@@ -208,11 +209,7 @@ fn render_metadata(
     let mut external: BTreeSet<String> = BTreeSet::new();
     for record in records {
         let key = record.id.canonical_key();
-        for edge in graph
-            .references
-            .iter()
-            .filter(|edge| edge.from == key)
-        {
+        for edge in graph.references.iter().filter(|edge| edge.from == key) {
             if own_keys.contains(&edge.to) {
                 continue;
             }

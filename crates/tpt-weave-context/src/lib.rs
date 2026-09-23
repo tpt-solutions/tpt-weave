@@ -22,10 +22,10 @@ pub mod retrieval;
 pub mod sources;
 
 pub use expand::{
-    expand_dependency, expand_module, expand_related, expand_symbol, expand_test,
-    related_keys, test_keys, Expansion,
+    Expansion, expand_dependency, expand_module, expand_related, expand_symbol, expand_test,
+    related_keys, test_keys,
 };
-pub use levels::{estimate_tokens, represent_file, FileRepresentation, Selection};
+pub use levels::{FileRepresentation, Selection, estimate_tokens, represent_file};
 pub use retrieval::{RepositoryOverview, Retriever};
 pub use sources::{SourceProvider, Sources};
 

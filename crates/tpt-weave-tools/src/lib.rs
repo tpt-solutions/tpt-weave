@@ -22,6 +22,6 @@ mod search;
 mod store;
 
 pub use kind::ToolKind;
-pub use reduce::{reduce, ToolOutput};
+pub use reduce::{ToolOutput, reduce};
 pub use reduction::{Reduction, ReductionStatus};
 pub use store::RawStore;

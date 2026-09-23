@@ -5,7 +5,7 @@
 use tpt_weave_core::{RepositoryId, Revision};
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph};
 use tpt_weave_index::CargoIndex;
-use tpt_weave_rust::{parse_file, FileInput, ParsedFile};
+use tpt_weave_rust::{FileInput, ParsedFile, parse_file};
 
 /// Two workspace packages: `demo` depends on internal `tpt-math`,
 /// unlinked external `serde`, and linkable external `tpt-cv`.

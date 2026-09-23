@@ -1,7 +1,7 @@
 //! Skeleton generation (todo.md Phase 4).
 
 use tpt_weave_core::{RepositoryId, SymbolId, SymbolKind};
-use tpt_weave_rust::{parse_file, skeleton, skeleton_with, FileInput, BODY_PLACEHOLDER};
+use tpt_weave_rust::{BODY_PLACEHOLDER, FileInput, parse_file, skeleton, skeleton_with};
 
 const SRC: &str = r#"//! Crate docs.
 #[derive(Clone)]
@@ -84,8 +84,7 @@ fn removes_bodies_preserving_signatures_types_impls_and_modules() {
 #[test]
 fn keeps_selected_bodies_and_removes_the_rest() {
     let repo = repository();
-    let keep_make =
-        |id: &SymbolId| id.name == "make" && id.kind == SymbolKind::Function;
+    let keep_make = |id: &SymbolId| id.name == "make" && id.kind == SymbolKind::Function;
     let sk = skeleton_with(&input(&repo, "src/lib.rs", &[]), SRC, keep_make).expect("skeleton");
 
     // Selected body kept, everything else still stripped.

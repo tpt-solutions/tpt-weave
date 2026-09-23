@@ -5,7 +5,7 @@ mod common;
 
 use common::{build, key_of, sources};
 use tpt_weave_context::{
-    expand_dependency, expand_module, expand_related, expand_symbol, expand_test, ContextError,
+    ContextError, expand_dependency, expand_module, expand_related, expand_symbol, expand_test,
 };
 use tpt_weave_core::ContextLevel;
 
@@ -15,8 +15,8 @@ fn expands_a_symbol_to_targeted_implementation() {
     let sources = sources();
     let make = key_of(&graph, "make");
 
-    let expansion = expand_symbol(&graph, &sources, &make, ContextLevel::Implementation)
-        .expect("expansion");
+    let expansion =
+        expand_symbol(&graph, &sources, &make, ContextLevel::Implementation).expect("expansion");
     assert_eq!(expansion.subject, make);
     assert_eq!(expansion.level, ContextLevel::Implementation);
     assert_eq!(expansion.symbols.len(), 1);
@@ -33,8 +33,8 @@ fn expands_a_symbol_to_targeted_implementation() {
     let skeleton = expand_symbol(&graph, &sources, &make, ContextLevel::Skeleton).expect("level 3");
     assert!(!skeleton.files[0].text.contains("value: 0"));
 
-    let err = expand_symbol(&graph, &sources, "missing", ContextLevel::Full)
-        .expect_err("unknown symbol");
+    let err =
+        expand_symbol(&graph, &sources, "missing", ContextLevel::Full).expect_err("unknown symbol");
     assert!(matches!(err, ContextError::UnknownSymbol(_)));
 }
 
@@ -43,8 +43,14 @@ fn expands_a_module_across_its_files() {
     let graph = build();
     let sources = sources();
 
-    let expansion = expand_module(&graph, &sources, "demo", "inner", ContextLevel::Implementation)
-        .expect("expansion");
+    let expansion = expand_module(
+        &graph,
+        &sources,
+        "demo",
+        "inner",
+        ContextLevel::Implementation,
+    )
+    .expect("expansion");
     assert_eq!(expansion.subject, "demo::inner");
     assert!(expansion.symbols.iter().any(|s| s.id.name == "outer"));
     assert_eq!(expansion.files.len(), 1);
@@ -84,8 +90,8 @@ fn expands_a_dependency_public_api() {
     assert!(api.symbols.iter().any(|s| s.signature.contains("square")));
 
     // External linked package: repository recorded; no sources indexed.
-    let external = expand_dependency(&graph, &sources, "tpt-cv", ContextLevel::Skeleton)
-        .expect("tpt-cv");
+    let external =
+        expand_dependency(&graph, &sources, "tpt-cv", ContextLevel::Skeleton).expect("tpt-cv");
     assert_eq!(
         external.repository.as_ref().map(|r| r.as_str()),
         Some("tpt-cv")
@@ -124,8 +130,8 @@ fn expands_related_tests_for_a_symbol() {
 
     // helper has no direct test callers, but the colocated rule finds the
     // unit tests in its file.
-    let colocated = expand_test(&graph, &sources, &helper, ContextLevel::Signatures)
-        .expect("colocated tests");
+    let colocated =
+        expand_test(&graph, &sources, &helper, ContextLevel::Signatures).expect("colocated tests");
     assert!(colocated.symbols.iter().any(|s| s.id.name == "test_make"));
 
     // Integration tests calling consume live in tests/.
@@ -176,7 +182,10 @@ fn expands_related_implementations() {
         .collect();
     assert!(call_names.contains(&"make"));
     assert!(call_names.contains(&"outer"), "caller: {call_names:?}");
-    assert!(call_names.contains(&"Pixel::draw"), "caller: {call_names:?}");
+    assert!(
+        call_names.contains(&"Pixel::draw"),
+        "caller: {call_names:?}"
+    );
     assert!(call_names.contains(&"Pixel"), "type relation");
     assert!(call_names.contains(&"Draw"), "via related impl");
 
@@ -189,7 +198,10 @@ fn expands_related_implementations() {
         .iter()
         .map(|s| s.id.name.as_str())
         .collect();
-    assert!(consume_names.contains(&"helper"), "callee: {consume_names:?}");
+    assert!(
+        consume_names.contains(&"helper"),
+        "callee: {consume_names:?}"
+    );
 
     // Trait expansion includes its implementations.
     let trait_related =

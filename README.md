@@ -7,10 +7,11 @@ workspaces deterministically, builds hierarchical source representations, and de
 coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
 information required to complete the task correctly.
 
-> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–7 of
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–8 of
 > [todo.md](todo.md) are complete (repository scaffold, architecture decisions, core types and
 > configuration, indexer, symbol graph, hierarchical representations, deterministic context
-> retrieval, tool output reduction, filesystem cache). All other phases are pending.
+> retrieval, tool output reduction, filesystem cache, JEv decision provider + OpenRouter client +
+> policy engine). All other phases are pending.
 
 ## Core principle
 
@@ -33,7 +34,9 @@ Start as one repository with a workspace (spec §25):
 | `crates/tpt-weave-context` | Phases 4–5 done | Hierarchical representations (levels 0–5), expansion, deterministic retrieval |
 | `crates/tpt-weave-tools` | Phase 6 done | Deterministic tool-output reduction (cargo/git/tests/diffs/logs/JSON) with raw storage |
 | `crates/tpt-weave-cache` | Phase 7 done | Filesystem cache: revision/schema keys, invalidation, clear, statistics |
-| `crates/tpt-weave-decisions` … `crates/tpt-weave-eval` | planned | Decisions, MCP, CLI, eval (spec §25) |
+| `crates/tpt-weave-decisions` | Phase 8 done | DecisionProvider trait, mock/fallback providers, JEv categories, policy engine, decision log |
+| `crates/tpt-weave-openrouter` | Phase 8 done | OpenRouter Decisions API (JEv) blocking client: retries, timeouts, usage/confidence |
+| `crates/tpt-weave-mcp` … `crates/tpt-weave-eval` | planned | MCP, CLI, eval (spec §25) |
 
 ## Quick start
 

@@ -1,9 +1,9 @@
 //! Expansion: choosing *which* bodies to reveal when moving up a level
 //! (todo.md Phase 4 "Expansion").
 
-use crate::levels::{file_records, represent_file, FileRepresentation, Selection};
-use crate::sources::SourceProvider;
 use crate::ContextError;
+use crate::levels::{FileRepresentation, Selection, file_records, represent_file};
+use crate::sources::SourceProvider;
 use std::collections::BTreeSet;
 use tpt_weave_core::{ContextLevel, SymbolKind};
 use tpt_weave_graph::{ReferenceKind, RepositoryGraph};
@@ -73,16 +73,11 @@ pub fn expand_module(
             record.id.package == package
                 && (module.is_empty()
                     || record.id.module == module
-                    || record
-                        .id
-                        .module
-                        .starts_with(&format!("{}::", module)))
+                    || record.id.module.starts_with(&format!("{}::", module)))
         })
         .collect();
     if members.is_empty() {
-        return Err(ContextError::UnknownModule(format!(
-            "{package}::{module}"
-        )));
+        return Err(ContextError::UnknownModule(format!("{package}::{module}")));
     }
     let selection = selection_for(level, members.iter().copied());
     let files = represent_files(graph, sources, &members, level, &selection)?;
@@ -105,7 +100,10 @@ pub fn expand_dependency(
     level: ContextLevel,
 ) -> Result<Expansion, ContextError> {
     let known = graph.crates.iter().any(|node| node.name == package)
-        || graph.symbols.iter().any(|record| record.id.package == package)
+        || graph
+            .symbols
+            .iter()
+            .any(|record| record.id.package == package)
         || graph
             .dependencies
             .iter()
@@ -244,10 +242,7 @@ pub fn expand_related(
 /// Canonical keys related to a symbol: the symbol itself plus callers,
 /// callees, type relations, trait implementations, impl blocks, structural
 /// parents/children and trait↔impl links (fixpoint closure).
-pub fn related_keys(
-    graph: &RepositoryGraph,
-    key: &str,
-) -> Result<BTreeSet<String>, ContextError> {
+pub fn related_keys(graph: &RepositoryGraph, key: &str) -> Result<BTreeSet<String>, ContextError> {
     graph
         .symbol(key)
         .ok_or_else(|| ContextError::UnknownSymbol(key.to_string()))?;

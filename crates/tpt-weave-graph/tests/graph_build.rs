@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{build, key_of, SRC};
+use common::{SRC, build, key_of};
 use tpt_weave_core::RepositoryId;
 use tpt_weave_rust::FileInput;
 
@@ -17,7 +17,11 @@ fn builds_symbol_table_and_module_graph() {
 
     // Module graph: inner (top-level) and outer2::deep (nested).
     let modules = graph.modules_of("demo");
-    assert!(modules.iter().any(|m| m.path == "inner" && m.parent.is_none()));
+    assert!(
+        modules
+            .iter()
+            .any(|m| m.path == "inner" && m.parent.is_none())
+    );
     let deep = modules
         .iter()
         .find(|m| m.path == "outer2::deep")
@@ -40,10 +44,12 @@ fn builds_symbol_table_and_module_graph() {
     };
     let extra = tpt_weave_rust::parse_file(&input, "pub fn extra() {}").expect("parses");
     let cargo = tpt_weave_index::CargoIndex::from_metadata_json(common::METADATA).expect("fx");
-    let revision =
-        tpt_weave_core::Revision::new("1111111111111111111111111111111111111111");
+    let revision = tpt_weave_core::Revision::new("1111111111111111111111111111111111111111");
     let graph2 = tpt_weave_graph::GraphBuilder::new("demo-repo", revision, cargo)
-        .add_file("demo", tpt_weave_rust::parse_file(&input, SRC).expect("src"))
+        .add_file(
+            "demo",
+            tpt_weave_rust::parse_file(&input, SRC).expect("src"),
+        )
         .add_file("demo", extra)
         .build();
     assert!(graph2.find_symbols("extra").len() == 1);

@@ -1,8 +1,8 @@
 //! Context types exercised through the public API (levels, ids, candidates).
 
 use tpt_weave_core::{
-    ContextCandidate, ContextId, ContextLevel, ContextRequest, ContextSource, SymbolId,
-    SymbolKind, TokenAccounting, RepositoryId,
+    ContextCandidate, ContextId, ContextLevel, ContextRequest, ContextSource, RepositoryId,
+    SymbolId, SymbolKind, TokenAccounting,
 };
 
 #[test]
@@ -66,8 +66,11 @@ fn symbol_sources_get_distinct_keys() {
     };
     let from_symbol =
         ContextCandidate::new(ContextSource::Symbol(symbol), ContextLevel::Signatures, 50);
-    let from_file =
-        ContextCandidate::new(ContextSource::File("image/pixel.rs".into()), ContextLevel::Signatures, 50);
+    let from_file = ContextCandidate::new(
+        ContextSource::File("image/pixel.rs".into()),
+        ContextLevel::Signatures,
+        50,
+    );
     assert_ne!(from_symbol.id, from_file.id);
     assert_eq!(
         from_symbol.source.key(),

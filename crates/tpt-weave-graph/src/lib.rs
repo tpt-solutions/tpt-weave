@@ -20,4 +20,4 @@ pub use model::{
     CrateNode, DependencyEdge, ExternalLink, ModuleNode, ReferenceEdge, ReferenceKind,
     RepositoryGraph,
 };
-pub use persistence::{graph_path, GraphError, GRAPH_FILE};
+pub use persistence::{GRAPH_FILE, GraphError, graph_path};

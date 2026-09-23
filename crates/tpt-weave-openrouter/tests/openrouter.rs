@@ -4,8 +4,8 @@
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tpt_weave_core::{JevConfig, ProviderConfig};
 use tpt_weave_decisions::{DecisionCategory, DecisionProvider, ProviderError};
@@ -25,12 +25,6 @@ const SUCCESS_BODY: &str = r#"{
   },
   "usage": { "input_tokens": 42, "output_tokens": 3, "cost": 0.0001 }
 }"#;
-
-/// Serves scripted responses in order (last repeats) and counts hits.
-struct Scripted {
-    endpoint: String,
-    hits: Arc<AtomicUsize>,
-}
 
 fn respond(stream: &mut TcpStream, status: u16, body: &str) -> std::io::Result<()> {
     let reason = match status {
@@ -53,8 +47,7 @@ fn respond(stream: &mut TcpStream, status: u16, body: &str) -> std::io::Result<(
 fn read_request_head(stream: &mut TcpStream) -> String {
     let mut buf = [0u8; 8192];
     let mut head = String::new();
-    loop {
-        let Ok(n) = stream.read(&mut buf) else { break };
+    while let Ok(n) = stream.read(&mut buf) {
         if n == 0 {
             break;
         }
@@ -66,44 +59,22 @@ fn read_request_head(stream: &mut TcpStream) -> String {
     head
 }
 
-// The server thread above reads inside `respond` only for writing; we
-// need one full request read per connection. Redefine the accept loop
-// helper used by `start` — see `serve` below.
-
-fn serve(listener: TcpListener, responses: Vec<(u16, &'static str)>) {
-    let queue = Arc::new(std::sync::Mutex::new(responses));
-    for stream in listener.incoming() {
-        let Ok(mut stream) = stream else { break };
-        let head = read_request_head(&mut stream);
-        if head.is_empty() {
-            continue;
-        }
-        let (status, body) = {
-            let mut queue = queue.lock().unwrap();
-            if queue.len() > 1 {
-                queue.remove(0);
-            }
-            queue[0]
-        };
-        let _ = respond(&mut stream, status, body);
-    }
-}
-
-/// Server that returns `responses` in order (final repeats), counting
-/// requests. Each response cycle pops the next scripted reply.
+/// Scripted HTTP server returning `responses` in order (final repeats),
+/// counting request hits.
 struct Scripted {
     endpoint: String,
     hits: Arc<AtomicUsize>,
 }
 
 impl Scripted {
-    fn start(mut responses: Vec<(u16, &'static str)>) -> Self {
+    fn start(responses: Vec<(u16, &'static str)>) -> Self {
         assert!(!responses.is_empty());
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let hits = Arc::new(AtomicUsize::new(0));
         let counter = Arc::clone(&hits);
         std::thread::spawn(move || {
+            let queue = responses;
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
                 let head = read_request_head(&mut stream);
@@ -111,12 +82,12 @@ impl Scripted {
                     continue;
                 }
                 let n = counter.fetch_add(1, Ordering::SeqCst);
-                let index = if responses.len() == 1 {
+                let index = if queue.len() == 1 {
                     0
                 } else {
-                    n.min(responses.len() - 1)
+                    n.min(queue.len() - 1)
                 };
-                let (status, body) = responses[index];
+                let (status, body) = queue[index];
                 let _ = respond(&mut stream, status, body);
             }
         });
@@ -147,7 +118,12 @@ fn request_body_matches_the_decisions_api_shape() {
     assert_eq!(body["state"], "fix the bug");
     let question = &body["questions"]["answer"];
     assert_eq!(question["type"], "choice");
-    assert!(question["instructions"].as_str().unwrap().contains("src/lib.rs"));
+    assert!(
+        question["instructions"]
+            .as_str()
+            .unwrap()
+            .contains("src/lib.rs")
+    );
     assert_eq!(question["criteria"]["relevant"], "relevant");
     assert_eq!(question["criteria"]["irrelevant"], "irrelevant");
 }
@@ -214,10 +190,7 @@ fn decide_records_latency_tokens_and_confidence() {
 #[test]
 fn retries_server_errors_then_succeeds() {
     let server = Scripted::start(vec![
-        (
-            500,
-            r#"{"error":{"code":500,"message":"internal"}}"#,
-        ),
+        (500, r#"{"error":{"code":500,"message":"internal"}}"#),
         (200, SUCCESS_BODY),
     ]);
     let provider = provider(&server.endpoint);
@@ -269,16 +242,17 @@ fn rejects_invalid_endpoints_and_empty_keys() {
 fn from_config_reads_endpoint_model_and_key_env() {
     // Definitely-unset env name; edition 2024 forbids safe set_var.
     let jev = JevConfig::default();
-    let mut provider_cfg = ProviderConfig::default();
-    provider_cfg.endpoint = "http://127.0.0.1:1".to_string();
-    provider_cfg.api_key_env = "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string();
-    let err = OpenRouterProvider::from_config(&jev, &provider_cfg).unwrap_err();
-    assert!(matches!(err, ProviderError::MissingApiKey { .. }), "{err:?}");
-}
-
-// Silence unused warnings for helpers kept for future live-API tests.
-#[allow(dead_code)]
-fn _unused(s: Server) {
-    let _ = s;
-    let _ = serve;
+    let provider_cfg = ProviderConfig {
+        endpoint: "http://127.0.0.1:1".to_string(),
+        api_key_env: "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string(),
+        ..Default::default()
+    };
+    let err = match OpenRouterProvider::from_config(&jev, &provider_cfg) {
+        Ok(_) => panic!("expected missing API key error"),
+        Err(err) => err,
+    };
+    assert!(
+        matches!(err, ProviderError::MissingApiKey { .. }),
+        "{err:?}"
+    );
 }

@@ -3,9 +3,9 @@
 use std::time::Duration;
 use tpt_weave_core::{JevConfig, ProviderConfig};
 use tpt_weave_decisions::{
-    Decision, DecisionCategory, DecisionEngine, DecisionOutcome, DecisionProvider,
-    DecisionSource, DecisionRequest, DeterministicFallbackProvider, MockProvider, ProviderError,
-    SafetyOverride, FALLBACK_CONFIDENCE,
+    Decision, DecisionCategory, DecisionEngine, DecisionOutcome, DecisionProvider, DecisionRequest,
+    DecisionSource, DeterministicFallbackProvider, FALLBACK_CONFIDENCE, MockProvider,
+    ProviderError, SafetyOverride,
 };
 
 fn outcome(choice: &str, confidence: f32) -> DecisionOutcome {
@@ -59,7 +59,11 @@ fn every_category_has_unique_choices_and_a_safe_choice_in_the_set() {
         let mut seen = choices.to_vec();
         seen.sort_unstable();
         seen.dedup();
-        assert_eq!(seen.len(), choices.len(), "{category} choices must be unique");
+        assert_eq!(
+            seen.len(),
+            choices.len(),
+            "{category} choices must be unique"
+        );
     }
 }
 
@@ -100,7 +104,7 @@ fn deterministic_fallback_is_stable_and_within_choices() {
     let first = provider.choose(&request);
     let second = provider.choose(&request);
     assert_eq!(first, second);
-    assert!(request.choices.contains(&first.choice.as_str()));
+    assert!(request.choices.contains(&first.choice));
     assert_eq!(first.confidence, FALLBACK_CONFIDENCE);
     assert!(first.confidence < 0.70);
 }
@@ -141,8 +145,10 @@ fn safety_override_beats_provider_and_low_confidence_paths() {
 
 #[test]
 fn policy_from_jev_uses_configured_threshold() {
-    let mut jev = JevConfig::default();
-    jev.min_confidence = 0.5;
+    let jev = JevConfig {
+        min_confidence: 0.5,
+        ..Default::default()
+    };
     let policy = tpt_weave_decisions::DecisionPolicy::from_jev(&jev);
     assert_eq!(policy.min_confidence, 0.5);
     let judgement = policy.apply(DecisionCategory::Relevance, outcome("relevant", 0.6));
@@ -173,11 +179,15 @@ fn engine_falls_back_when_the_provider_fails() {
     );
     let judgement = engine.decide(DecisionCategory::Relevance, "src.rs", "ctx");
     assert_eq!(judgement.source, DecisionSource::Fallback);
-    let error = judgement.error.expect("fallback records the provider error");
+    let error = judgement
+        .error
+        .expect("fallback records the provider error");
     assert!(error.contains("timeout"), "{error}");
-    assert!(DecisionCategory::Relevance
-        .choices()
-        .contains(&judgement.choice.as_str()));
+    assert!(
+        DecisionCategory::Relevance
+            .choices()
+            .contains(&judgement.choice.as_str())
+    );
     assert_eq!(engine.log().entries().len(), 1);
 }
 
@@ -189,10 +199,18 @@ fn engine_rejects_out_of_set_choices_and_falls_back_deterministically() {
     );
     let judgement = engine.decide(DecisionCategory::Relevance, "src.rs", "ctx");
     assert_eq!(judgement.source, DecisionSource::Fallback);
-    assert!(judgement.error.as_deref().unwrap_or("").contains("not-a-choice"));
-    assert!(DecisionCategory::Relevance
-        .choices()
-        .contains(&judgement.choice.as_str()));
+    assert!(
+        judgement
+            .error
+            .as_deref()
+            .unwrap_or("")
+            .contains("not-a-choice")
+    );
+    assert!(
+        DecisionCategory::Relevance
+            .choices()
+            .contains(&judgement.choice.as_str())
+    );
 }
 
 #[test]
@@ -254,8 +272,10 @@ fn config_built_from_jev_and_provider_config_reads_key_from_env_name() {
     // A definitely-unset variable name avoids mutating the process
     // environment (edition 2024 makes set_var unsafe).
     let jev = JevConfig::default();
-    let mut provider = ProviderConfig::default();
-    provider.api_key_env = "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string();
+    let provider = ProviderConfig {
+        api_key_env: "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string(),
+        ..Default::default()
+    };
     let err = tpt_weave_openrouter_shim(&jev, &provider);
     assert!(
         err.contains("missing API key"),

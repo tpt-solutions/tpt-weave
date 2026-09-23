@@ -30,7 +30,9 @@ impl RawStore {
     /// identical content returns the same path without rewriting.
     pub fn store(&self, output: &ToolOutput) -> io::Result<PathBuf> {
         let content = output.stored_content();
-        let path = self.root.join(format!("{:016x}.txt", fnv1a64(content.as_bytes())));
+        let path = self
+            .root
+            .join(format!("{:016x}.txt", fnv1a64(content.as_bytes())));
         if !path.exists() {
             fs::create_dir_all(&self.root)?;
             fs::write(&path, &content)?;

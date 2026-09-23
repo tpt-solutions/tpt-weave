@@ -40,9 +40,7 @@ pub(crate) fn search_output(text: &str, exit_code: i32) -> (Vec<String>, Reducti
         lines.push("FILES:".to_string());
         push_capped(
             &mut lines,
-            by_file
-                .into_iter()
-                .map(|(path, n)| format!("{path}: {n}")),
+            by_file.into_iter().map(|(path, n)| format!("{path}: {n}")),
             FILE_CAP,
         );
     }

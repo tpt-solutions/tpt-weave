@@ -105,18 +105,13 @@ impl OpenRouterProvider {
     /// from the configured environment variable name (todo.md: API key
     /// configuration; `docs/decisions.md` section 5: keys are never
     /// stored in the manifest).
-    pub fn from_config(
-        jev: &JevConfig,
-        provider: &ProviderConfig,
-    ) -> Result<Self, ProviderError> {
+    pub fn from_config(jev: &JevConfig, provider: &ProviderConfig) -> Result<Self, ProviderError> {
         jev.validate().map_err(|err| ProviderError::Config {
             detail: err.to_string(),
         })?;
-        provider
-            .validate()
-            .map_err(|err| ProviderError::Config {
-                detail: err.to_string(),
-            })?;
+        provider.validate().map_err(|err| ProviderError::Config {
+            detail: err.to_string(),
+        })?;
         let api_key = std::env::var(&provider.api_key_env)
             .ok()
             .filter(|key| !key.trim().is_empty())
@@ -194,27 +189,27 @@ impl OpenRouterProvider {
             model: Option<String>,
         }
 
-        let wire: Wire = serde_json::from_str(body).map_err(|err| {
-            ProviderError::InvalidResponse {
+        let wire: Wire =
+            serde_json::from_str(body).map_err(|err| ProviderError::InvalidResponse {
                 detail: format!("unparseable body: {err}"),
-            }
-        })?;
-        let answer = wire
-            .answers
-            .get(QUESTION_KEY)
-            .ok_or_else(|| ProviderError::InvalidResponse {
-                detail: format!("missing answers.{QUESTION_KEY}"),
             })?;
+        let answer =
+            wire.answers
+                .get(QUESTION_KEY)
+                .ok_or_else(|| ProviderError::InvalidResponse {
+                    detail: format!("missing answers.{QUESTION_KEY}"),
+                })?;
         if answer.kind != "choice" {
             return Err(ProviderError::InvalidResponse {
                 detail: format!("expected a choice answer, got `{}`", answer.kind),
             });
         }
-        let choice = answer.choice.clone().ok_or_else(|| {
-            ProviderError::InvalidResponse {
+        let choice = answer
+            .choice
+            .clone()
+            .ok_or_else(|| ProviderError::InvalidResponse {
                 detail: "choice answer missing `choice`".to_string(),
-            }
-        })?;
+            })?;
         if choice.is_empty() {
             return Err(ProviderError::InvalidResponse {
                 detail: "choice answer is empty".to_string(),
@@ -261,7 +256,7 @@ impl DecisionProvider for OpenRouterProvider {
             match send {
                 Err(err) => {
                     if attempts <= self.max_retries {
-                        std::thread::sleep(self.backoff.saturating_mul(u32::from(attempts - 1)));
+                        std::thread::sleep(self.backoff.saturating_mul(attempts - 1));
                         continue;
                     }
                     return if err.is_timeout() {
@@ -276,11 +271,9 @@ impl DecisionProvider for OpenRouterProvider {
                 Ok(response) => {
                     let status = response.status();
                     if status.is_success() {
-                        let text = response.text().map_err(|err| {
-                            ProviderError::Transport {
-                                detail: err.to_string(),
-                                attempts,
-                            }
+                        let text = response.text().map_err(|err| ProviderError::Transport {
+                            detail: err.to_string(),
+                            attempts,
                         })?;
                         let parsed = Self::parse_response(&text)?;
                         return Ok(DecisionOutcome {
@@ -298,7 +291,7 @@ impl DecisionProvider for OpenRouterProvider {
                     let code = status.as_u16();
                     let message = extract_error_message(response);
                     if is_retryable(code) && attempts <= self.max_retries {
-                        std::thread::sleep(self.backoff.saturating_mul(u32::from(attempts - 1)));
+                        std::thread::sleep(self.backoff.saturating_mul(attempts - 1));
                         continue;
                     }
                     return Err(ProviderError::Http {

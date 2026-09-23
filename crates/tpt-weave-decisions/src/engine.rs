@@ -118,12 +118,7 @@ impl DecisionEngine {
     /// Order (todo.md Phase 8 Policy): provider answer → choice
     /// validation → safety override → confidence threshold →
     /// deterministic fallback on provider failure.
-    pub fn decide(
-        &self,
-        category: DecisionCategory,
-        subject: &str,
-        context: &str,
-    ) -> Judgement {
+    pub fn decide(&self, category: DecisionCategory, subject: &str, context: &str) -> Judgement {
         let request = category.ask(subject, context);
         let provider_name = self.provider.name().to_string();
 
@@ -147,7 +142,10 @@ impl DecisionEngine {
                     self.policy.apply(category, outcome)
                 }
             }
-            Err(error) => self.policy.fallback(category, &request, fallback_latency, error.to_string()),
+            Err(error) => {
+                self.policy
+                    .fallback(category, &request, fallback_latency, error.to_string())
+            }
         };
 
         // A safety override must also win over the fallback path.

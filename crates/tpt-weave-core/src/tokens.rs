@@ -73,7 +73,9 @@ impl TokenAccounting {
 
     /// Human-readable report matching the spec.md section 16 example.
     pub fn summary(&self) -> String {
-        let width = group(self.raw_tokens).len().max(group(self.selected_tokens).len());
+        let width = group(self.raw_tokens)
+            .len()
+            .max(group(self.selected_tokens).len());
         format!(
             "{:<16}{:>w$}\n{:<16}{:>w$}\n{:<16}{:>w$.1}%\n{:<16}{:>w$}\n{:<16}{:>w$.1}%",
             "Raw context:",

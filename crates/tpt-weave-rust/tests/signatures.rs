@@ -1,7 +1,7 @@
 //! Signature rendering, error reporting and module-prefix behaviour.
 
 use tpt_weave_core::{RepositoryId, SymbolKind};
-use tpt_weave_rust::{parse_file, FileInput, ParsedFile, SymbolRecord};
+use tpt_weave_rust::{FileInput, ParsedFile, SymbolRecord, parse_file};
 
 fn parsed(source: &str, prefix: &[&str]) -> ParsedFile {
     let repository = RepositoryId::new("tpt-cv");
@@ -63,7 +63,10 @@ fn signatures_are_single_line_and_bodies_stripped() {
     assert!(!sample.contains('{'), "no body: {sample}");
 
     let resize = &get(&file, "resize", SymbolKind::Function).signature;
-    assert!(resize.contains("fn resize(width: usize) -> usize"), "{resize}");
+    assert!(
+        resize.contains("fn resize(width: usize) -> usize"),
+        "{resize}"
+    );
     assert!(!resize.contains('{'), "{resize}");
 
     let impl_sig = &get(&file, "<PixelBuffer as Sampler>", SymbolKind::Impl).signature;
@@ -83,16 +86,16 @@ fn signatures_are_single_line_and_bodies_stripped() {
 
 #[test]
 fn nested_modules_build_the_module_path() {
-    let file = parsed(
-        "mod outer { mod inner { pub fn deep() {} } }",
-        &[],
-    );
+    let file = parsed("mod outer { mod inner { pub fn deep() {} } }", &[]);
     let deep = get(&file, "deep", SymbolKind::Function);
     assert_eq!(deep.module(), "outer::inner");
     let outer = get(&file, "outer", SymbolKind::Module);
     let inner = get(&file, "inner", SymbolKind::Module);
     assert!(outer.parent.is_none());
-    assert_eq!(inner.parent.as_deref(), Some(outer.id.canonical_key().as_str()));
+    assert_eq!(
+        inner.parent.as_deref(),
+        Some(outer.id.canonical_key().as_str())
+    );
 
     // An indexer-supplied prefix shifts whole files (out-of-line mods).
     let file = parsed("pub fn resize() {}", &["image"]);

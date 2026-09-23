@@ -1,9 +1,9 @@
 //! Graph persistence and invalidation (todo.md Phase 3).
 
 use tpt_weave_core::{RepositoryId, Revision, SCHEMA_VERSION};
-use tpt_weave_graph::{graph_path, GraphBuilder, GraphError, RepositoryGraph};
+use tpt_weave_graph::{GraphBuilder, GraphError, RepositoryGraph, graph_path};
 use tpt_weave_index::CargoIndex;
-use tpt_weave_rust::{parse_file, FileInput};
+use tpt_weave_rust::{FileInput, parse_file};
 
 const METADATA: &str = r#"{
     "version": 1,
@@ -52,12 +52,12 @@ fn json_roundtrip_is_lossless_and_deterministic() {
 fn rejects_foreign_schema_and_tampered_documents() {
     let graph = build();
     let json = graph.to_json().expect("serialise");
-    let bumped = json.replace(
-        &format!("\"schema\": {SCHEMA_VERSION}"),
-        "\"schema\": 999",
-    );
+    let bumped = json.replace(&format!("\"schema\": {SCHEMA_VERSION}"), "\"schema\": 999");
     let err = RepositoryGraph::from_json(&bumped).expect_err("schema 999 rejected");
-    assert!(matches!(err, GraphError::SchemaMismatch { found: 999, .. }), "{err:?}");
+    assert!(
+        matches!(err, GraphError::SchemaMismatch { found: 999, .. }),
+        "{err:?}"
+    );
 
     assert!(RepositoryGraph::from_json("{ not json").is_err());
 }
@@ -74,9 +74,7 @@ fn invalidates_on_schema_or_revision_change() {
     // Schema drift => stale regardless of revision.
     let mut schema_drift = graph.clone();
     schema_drift.schema = SCHEMA_VERSION + 1;
-    assert!(schema_drift.is_stale(&Revision::new(
-        "2222222222222222222222222222222222222222"
-    )));
+    assert!(schema_drift.is_stale(&Revision::new("2222222222222222222222222222222222222222")));
 }
 
 #[test]
@@ -86,12 +84,13 @@ fn saves_and_loads_through_the_tpt_weave_directory() {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!(
-        "tpt-weave-graph-{}-{nanos}",
-        std::process::id()
-    ));
+    let dir = std::env::temp_dir().join(format!("tpt-weave-graph-{}-{nanos}", std::process::id()));
     let path = graph_path(&dir);
-    assert!(path.to_string_lossy().replace('\\', "/").ends_with("/.tpt-weave/graph.json"));
+    assert!(
+        path.to_string_lossy()
+            .replace('\\', "/")
+            .ends_with("/.tpt-weave/graph.json")
+    );
 
     graph.save(&path).expect("save");
     let loaded = RepositoryGraph::load(&path).expect("load");

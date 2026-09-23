@@ -9,13 +9,11 @@
 use crate::mentions::{self, Mention};
 use crate::record::{SymbolRecord, Visibility};
 use proc_macro2::Span;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use syn::spanned::Spanned;
-use syn::{
-    Attribute, Item, Type, Visibility as SynVisibility,
-};
+use syn::{Attribute, Item, Type, Visibility as SynVisibility};
 
 /// Failure to parse a Rust source file.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -74,7 +72,11 @@ pub fn parse_file(input: &FileInput<'_>, source: &str) -> Result<ParsedFile, Par
 
     let mut extractor = Extractor {
         input,
-        module_path: input.module_prefix.iter().map(|s| (*s).to_string()).collect(),
+        module_path: input
+            .module_prefix
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect(),
         symbols: Vec::new(),
         mentions: Vec::new(),
     };
@@ -165,8 +167,9 @@ impl<'a> Extractor<'a> {
                 let ident = &st.ident;
                 let generics = &st.generics;
                 let where_clause = &st.generics.where_clause;
-                let signature =
-                    normalize(&quote!(#vis #struct_token #ident #generics #where_clause).to_string());
+                let signature = normalize(
+                    &quote!(#vis #struct_token #ident #generics #where_clause).to_string(),
+                );
                 let id = self.push_symbol(
                     st.ident.span(),
                     &st.vis,
@@ -176,7 +179,8 @@ impl<'a> Extractor<'a> {
                     &st.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Enum(en) => {
                 let vis = &en.vis;
@@ -195,7 +199,8 @@ impl<'a> Extractor<'a> {
                     &en.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Fn(fun) => {
                 let vis = &fun.vis;
@@ -210,7 +215,8 @@ impl<'a> Extractor<'a> {
                     &fun.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Const(konst) => {
                 let vis = &konst.vis;
@@ -234,7 +240,8 @@ impl<'a> Extractor<'a> {
                     &konst.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Static(stat) => {
                 // Statics are recorded as constants (SymbolKind has no
@@ -261,7 +268,8 @@ impl<'a> Extractor<'a> {
                     &stat.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Type(alias) => {
                 let vis = &alias.vis;
@@ -284,7 +292,8 @@ impl<'a> Extractor<'a> {
                     &alias.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
             }
             Item::Macro(mac) => {
                 // `macro_rules!` definitions only (macro invocations are not
@@ -310,8 +319,7 @@ impl<'a> Extractor<'a> {
                 let trait_token = &tr.trait_token;
                 let ident = &tr.ident;
                 let generics = &tr.generics;
-                let mut signature_tokens =
-                    quote!(#vis #unsafety #trait_token #ident #generics);
+                let mut signature_tokens = quote!(#vis #unsafety #trait_token #ident #generics);
                 if let Some(colon) = &tr.colon_token {
                     colon.to_tokens(&mut signature_tokens);
                     for pair in tr.supertraits.pairs() {
@@ -339,7 +347,8 @@ impl<'a> Extractor<'a> {
                     &tr.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
                 // Trait methods (declarations) become `Trait::method`.
                 for trait_item in &tr.items {
                     if let syn::TraitItem::Fn(method) = trait_item {
@@ -369,8 +378,7 @@ impl<'a> Extractor<'a> {
                 let generics = &im.generics;
                 let self_ty = &im.self_ty;
                 let type_name = type_name(self_ty);
-                let mut signature_tokens =
-                    quote!(#defaultness #unsafety #impl_token #generics);
+                let mut signature_tokens = quote!(#defaultness #unsafety #impl_token #generics);
                 let impl_name = if let Some((bang, trait_path, for_token)) = &im.trait_ {
                     if let Some(bang) = bang {
                         bang.to_tokens(&mut signature_tokens);
@@ -399,7 +407,8 @@ impl<'a> Extractor<'a> {
                     &im.attrs,
                     parent,
                 );
-                self.mentions.extend(mentions::walk_item(&id.canonical_key(), item));
+                self.mentions
+                    .extend(mentions::walk_item(&id.canonical_key(), item));
                 // Members become `Type::member`; the enclosing impl's
                 // canonical key in `parent` disambiguates same-named methods
                 // from different trait impls.
@@ -462,10 +471,6 @@ impl<'a> Extractor<'a> {
             _ => {}
         }
     }
-
-
-
-
 }
 
 /// Renders a token stream as one normalised line (deterministic spacing:

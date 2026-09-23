@@ -12,10 +12,7 @@ const SCALAR_CAP: usize = 60;
 pub(crate) fn json_output(text: &str, exit_code: i32) -> (Vec<String>, ReductionStatus) {
     let trimmed = text.trim();
     if trimmed.is_empty() {
-        return (
-            vec!["JSON EMPTY".to_string()],
-            ReductionStatus::Success,
-        );
+        return (vec!["JSON EMPTY".to_string()], ReductionStatus::Success);
     }
 
     let parsed: Result<Value, _> = serde_json::from_str(trimmed);
@@ -23,10 +20,7 @@ pub(crate) fn json_output(text: &str, exit_code: i32) -> (Vec<String>, Reduction
         Ok(value) => value,
         Err(error) => {
             return (
-                vec![
-                    "JSON FAILURE".to_string(),
-                    format!("parse error: {error}"),
-                ],
+                vec!["JSON FAILURE".to_string(), format!("parse error: {error}")],
                 ReductionStatus::Failure {
                     reason: "invalid JSON".to_string(),
                 },

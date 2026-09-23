@@ -24,7 +24,9 @@ fn indexes_the_real_workspace() {
         let pkg = index.package(name).expect(name);
         assert!(pkg.is_workspace_member);
         assert!(
-            pkg.targets.iter().any(|t| t.kinds.iter().any(|k| k == "lib")),
+            pkg.targets
+                .iter()
+                .any(|t| t.kinds.iter().any(|k| k == "lib")),
             "{name} should have a lib target"
         );
     }

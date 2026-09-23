@@ -24,7 +24,9 @@ impl SourceLanguage {
     /// treated as [`SourceLanguage::Text`].
     pub fn from_path(path: &str) -> Self {
         let name = path.rsplit(['/', '\\']).next().unwrap_or(path);
-        let extension = name.rsplit_once('.').map(|(_, ext)| ext.to_ascii_lowercase());
+        let extension = name
+            .rsplit_once('.')
+            .map(|(_, ext)| ext.to_ascii_lowercase());
         match extension.as_deref() {
             Some("rs") => SourceLanguage::Rust,
             Some("toml") => SourceLanguage::Toml,
@@ -83,7 +85,10 @@ mod tests {
 
     #[test]
     fn detects_languages() {
-        assert_eq!(SourceLanguage::from_path("src/lib.rs"), SourceLanguage::Rust);
+        assert_eq!(
+            SourceLanguage::from_path("src/lib.rs"),
+            SourceLanguage::Rust
+        );
         assert_eq!(
             SourceLanguage::from_path("Cargo.toml"),
             SourceLanguage::Toml

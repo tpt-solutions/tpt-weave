@@ -109,11 +109,7 @@ impl DecisionPolicy {
     /// 2. below-threshold confidence falls back to the category's safe
     ///    choice ([`DecisionSource::LowConfidence`]);
     /// 3. otherwise the provider's answer stands.
-    pub fn apply(
-        &self,
-        category: DecisionCategory,
-        outcome: DecisionOutcome,
-    ) -> Judgement {
+    pub fn apply(&self, category: DecisionCategory, outcome: DecisionOutcome) -> Judgement {
         let judgement = Judgement {
             category,
             choice: outcome.decision.choice.clone(),

@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use tpt_weave_core::{hash::fnv1a64_hex, ContextLevel, RepositoryId, Revision, SCHEMA_VERSION};
+use tpt_weave_core::{ContextLevel, RepositoryId, Revision, SCHEMA_VERSION, hash::fnv1a64_hex};
 
 /// Which cache namespace an entry belongs to (todo.md Phase 7: index,
 /// symbol lookup, skeletons, context selections, tool-result reductions).
@@ -76,11 +76,7 @@ pub struct CacheKey {
 
 impl CacheKey {
     /// Builds a key directly from its parts.
-    pub fn new(
-        kind: CacheKind,
-        revision: Option<&Revision>,
-        query: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: CacheKind, revision: Option<&Revision>, query: impl Into<String>) -> Self {
         Self {
             data: CacheKeyData {
                 schema: SCHEMA_VERSION,
@@ -112,7 +108,11 @@ impl CacheKey {
 
     /// Repository index key (todo.md Phase 7 "Cache repository index").
     pub fn repository_index(repository: &RepositoryId, revision: &Revision) -> Self {
-        Self::at_revision(CacheKind::RepositoryIndex, revision, format!("repo:{repository}"))
+        Self::at_revision(
+            CacheKind::RepositoryIndex,
+            revision,
+            format!("repo:{repository}"),
+        )
     }
 
     /// Symbol lookup key (todo.md Phase 7 "Cache symbol lookup").
@@ -123,8 +123,12 @@ impl CacheKey {
     /// Skeleton key for a file at a level, with a fingerprint of the
     /// kept-selection (todo.md Phase 7 "Cache skeletons").
     pub fn skeleton(revision: &Revision, path: &str, selection: &str, level: ContextLevel) -> Self {
-        Self::at_revision(CacheKind::Skeleton, revision, format!("file:{path}\u{1f}{selection}"))
-            .with_level(level)
+        Self::at_revision(
+            CacheKind::Skeleton,
+            revision,
+            format!("file:{path}\u{1f}{selection}"),
+        )
+        .with_level(level)
     }
 
     /// Context selection key: task + policy + level
@@ -145,7 +149,11 @@ impl CacheKey {
     /// (todo.md Phase 7 "Cache tool-result reductions").
     pub fn tool_reduction(command: &str, raw_output: &str) -> Self {
         let digest = fnv1a64_hex(raw_output.as_bytes());
-        Self::new(CacheKind::ToolReduction, None, format!("{command}\u{1f}{digest}"))
+        Self::new(
+            CacheKind::ToolReduction,
+            None,
+            format!("{command}\u{1f}{digest}"),
+        )
     }
 
     /// The canonical JSON form the digest is taken over.

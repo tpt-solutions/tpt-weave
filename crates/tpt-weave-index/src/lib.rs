@@ -15,6 +15,4 @@ pub mod git;
 pub use cargo::{
     CargoIndex, DependencyIndex, DependencyKind, IndexError, PackageIndex, TargetIndex,
 };
-pub use git::{
-    ChangeStatus, CommitInfo, DiffEntry, FileStatus, GitError, GitRepository,
-};
+pub use git::{ChangeStatus, CommitInfo, DiffEntry, FileStatus, GitError, GitRepository};

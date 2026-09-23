@@ -5,7 +5,7 @@ use crate::model::{
     RepositoryGraph,
 };
 use std::collections::BTreeMap;
-use tpt_weave_core::{RepositoryId, Revision, SymbolKind, SCHEMA_VERSION};
+use tpt_weave_core::{RepositoryId, Revision, SCHEMA_VERSION, SymbolKind};
 use tpt_weave_index::CargoIndex;
 use tpt_weave_rust::{Mention, MentionKind, ParsedFile, SymbolRecord};
 
@@ -24,11 +24,7 @@ pub struct GraphBuilder {
 
 impl GraphBuilder {
     /// Starts building the graph for one repository at one revision.
-    pub fn new(
-        repository: impl Into<String>,
-        revision: Revision,
-        cargo: CargoIndex,
-    ) -> Self {
+    pub fn new(repository: impl Into<String>, revision: Revision, cargo: CargoIndex) -> Self {
         Self {
             repository: RepositoryId::new(repository),
             revision,
@@ -53,7 +49,11 @@ impl GraphBuilder {
     ) -> Self {
         let package = package.into();
         let repository = RepositoryId::new(repository);
-        match self.external_links.iter_mut().find(|l| l.package == package) {
+        match self
+            .external_links
+            .iter_mut()
+            .find(|l| l.package == package)
+        {
             Some(existing) => existing.repository = repository,
             None => self.external_links.push(ExternalLink {
                 package,
@@ -77,8 +77,12 @@ impl GraphBuilder {
                 is_workspace_member: p.is_workspace_member,
             })
             .collect();
-        let known_packages: Vec<&str> =
-            self.cargo.packages.iter().map(|p| p.name.as_str()).collect();
+        let known_packages: Vec<&str> = self
+            .cargo
+            .packages
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect();
 
         // Symbol table (all files) + module graph nodes.
         let mut symbols: Vec<SymbolRecord> = Vec::new();
@@ -134,9 +138,8 @@ impl GraphBuilder {
                 .cmp(&b.from_package)
                 .then_with(|| a.to_package.cmp(&b.to_package))
         });
-        dependencies.dedup_by(|a, b| {
-            a.from_package == b.from_package && a.to_package == b.to_package
-        });
+        dependencies
+            .dedup_by(|a, b| a.from_package == b.from_package && a.to_package == b.to_package);
 
         // Resolve mentions into reference edges.
         let key_index: BTreeMap<String, usize> = symbols
@@ -224,8 +227,7 @@ fn resolve_candidates(
             let simple_method = s.id.kind == SymbolKind::Method
                 && s.id.name.ends_with(&method_suffix)
                 && s.id.name.len() > method_suffix.len();
-            (s.id.name == mention.name || simple_method)
-                && s.id.canonical_key() != mention.from
+            (s.id.name == mention.name || simple_method) && s.id.canonical_key() != mention.from
         })
         .map(|(index, _)| index)
         .collect();
@@ -237,8 +239,7 @@ fn resolve_candidates(
         .iter()
         .copied()
         .filter(|&i| {
-            symbols[i].id.package == origin.id.package
-                && symbols[i].id.module == origin.id.module
+            symbols[i].id.package == origin.id.package && symbols[i].id.module == origin.id.module
         })
         .collect();
     let same_package: Vec<usize> = candidates

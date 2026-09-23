@@ -1,10 +1,10 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-23):** Phases 0–7 complete (repository + decisions, core model + manifest
+> **Status (2026-09-23):** Phases 0–8 complete (repository + decisions, core model + manifest
 > configuration, cargo/git/syn indexer, symbol graph, hierarchical representations + expansion,
-> deterministic context retrieval, tool output reduction, filesystem cache; 90 tests passing,
-> clippy `-D warnings` clean).
-> Phases 8–20 pending.
+> deterministic context retrieval, tool output reduction, filesystem cache, JEv decision
+> provider/OpenRouter client/policy engine; 118 tests passing, clippy `-D warnings` clean).
+> Phases 9–20 pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -186,41 +186,41 @@
 
 ### Provider abstraction
 
-- [ ] Implement DecisionProvider trait.
-- [ ] Implement mock provider.
-- [ ] Implement deterministic fallback provider.
-- [ ] Define decision request schema.
-- [ ] Define decision response schema.
+- [x] Implement DecisionProvider trait.
+- [x] Implement mock provider.
+- [x] Implement deterministic fallback provider.
+- [x] Define decision request schema.
+- [x] Define decision response schema.
 
 ### OpenRouter
 
-- [ ] Implement OpenRouter Decisions API client.
-- [ ] Support typesafe/jev-1.13.
-- [ ] Support configurable model ID.
-- [ ] Support API key configuration.
-- [ ] Support timeouts.
-- [ ] Support retries.
-- [ ] Support provider errors.
-- [ ] Record latency.
-- [ ] Record token usage.
-- [ ] Record decision confidence.
+- [x] Implement OpenRouter Decisions API client.
+- [x] Support typesafe/jev-1.13.
+- [x] Support configurable model ID.
+- [x] Support API key configuration.
+- [x] Support timeouts.
+- [x] Support retries.
+- [x] Support provider errors.
+- [x] Record latency.
+- [x] Record token usage.
+- [x] Record decision confidence.
 
 ### Decisions
 
-- [ ] Relevance.
-- [ ] Expansion.
-- [ ] Dependency traversal.
-- [ ] Context retention.
-- [ ] Context eviction.
-- [ ] Task classification.
-- [ ] Retrieval depth.
+- [x] Relevance.
+- [x] Expansion.
+- [x] Dependency traversal.
+- [x] Context retention.
+- [x] Context eviction.
+- [x] Task classification.
+- [x] Retrieval depth.
 
 ### Policy
 
-- [ ] Implement configurable thresholds.
-- [ ] Implement low-confidence fallback.
-- [ ] Implement deterministic safety overrides.
-- [ ] Log decision outcomes for evaluation.
+- [x] Implement configurable thresholds.
+- [x] Implement low-confidence fallback.
+- [x] Implement deterministic safety overrides.
+- [x] Log decision outcomes for evaluation.
 
 ## Phase 9 — MCP
 

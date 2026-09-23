@@ -2,8 +2,8 @@
 
 mod common;
 
-use common::{build, key_of, sources, SRC_LIB};
-use tpt_weave_context::{estimate_tokens, represent_file, Selection};
+use common::{SRC_LIB, build, key_of, sources};
+use tpt_weave_context::{Selection, estimate_tokens, represent_file};
 use tpt_weave_core::ContextLevel;
 
 #[test]
@@ -12,18 +12,46 @@ fn renders_all_six_levels_deterministically() {
     let sources = sources();
     let path = "src/lib.rs";
 
-    let metadata = represent_file(&graph, &sources, path, ContextLevel::Metadata, &Selection::new())
-        .expect("level 0");
-    let symbols = represent_file(&graph, &sources, path, ContextLevel::Symbols, &Selection::new())
-        .expect("level 1");
-    let signatures =
-        represent_file(&graph, &sources, path, ContextLevel::Signatures, &Selection::new())
-            .expect("level 2");
-    let skeleton =
-        represent_file(&graph, &sources, path, ContextLevel::Skeleton, &Selection::new())
-            .expect("level 3");
-    let full = represent_file(&graph, &sources, path, ContextLevel::Full, &Selection::new())
-        .expect("level 5");
+    let metadata = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Metadata,
+        &Selection::new(),
+    )
+    .expect("level 0");
+    let symbols = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Symbols,
+        &Selection::new(),
+    )
+    .expect("level 1");
+    let signatures = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Signatures,
+        &Selection::new(),
+    )
+    .expect("level 2");
+    let skeleton = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Skeleton,
+        &Selection::new(),
+    )
+    .expect("level 3");
+    let full = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Full,
+        &Selection::new(),
+    )
+    .expect("level 5");
 
     // Level 0: metadata (spec.md section 9 example shape).
     assert!(metadata.text.starts_with("src/lib.rs\n"));
@@ -43,7 +71,10 @@ fn renders_all_six_levels_deterministically() {
     // Level 2: signatures.
     assert!(signatures.text.contains("pub fn make() -> Pixel"));
     assert!(signatures.text.contains("pub struct Pixel"));
-    assert!(!signatures.text.contains("value: 0"), "no bodies at level 2");
+    assert!(
+        !signatures.text.contains("value: 0"),
+        "no bodies at level 2"
+    );
 
     // Level 3: skeleton — structure without bodies, with source markers.
     assert!(skeleton.text.contains("pub fn make() -> Pixel"));
@@ -58,9 +89,14 @@ fn renders_all_six_levels_deterministically() {
     assert_eq!(full.text, SRC_LIB);
 
     // Deterministic: identical renders.
-    let again =
-        represent_file(&graph, &sources, path, ContextLevel::Skeleton, &Selection::new())
-            .expect("level 3");
+    let again = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Skeleton,
+        &Selection::new(),
+    )
+    .expect("level 3");
     assert_eq!(skeleton.text, again.text);
     assert_eq!(skeleton.token_estimate, again.token_estimate);
 }
@@ -73,9 +109,14 @@ fn level_4_keeps_only_selected_bodies() {
     let make = key_of(&graph, "make");
 
     let selection = Selection::new().with(make);
-    let targeted =
-        represent_file(&graph, &sources, path, ContextLevel::Implementation, &selection)
-            .expect("level 4");
+    let targeted = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Implementation,
+        &selection,
+    )
+    .expect("level 4");
 
     // Selected body kept; every other body still stripped.
     assert!(targeted.text.contains("Pixel { value: 0 }"));
@@ -85,9 +126,14 @@ fn level_4_keeps_only_selected_bodies() {
     syn_parse(&targeted.text);
 
     // Empty selection at level 4 equals the skeleton.
-    let skeleton =
-        represent_file(&graph, &sources, path, ContextLevel::Skeleton, &Selection::new())
-            .expect("level 3");
+    let skeleton = represent_file(
+        &graph,
+        &sources,
+        path,
+        ContextLevel::Skeleton,
+        &Selection::new(),
+    )
+    .expect("level 3");
     let empty = represent_file(
         &graph,
         &sources,
@@ -138,8 +184,14 @@ fn missing_sources_fail_only_for_levels_that_need_them() {
     let path = "src/lib.rs";
 
     // Levels 1-2 need no source text.
-    represent_file(&graph, &empty, path, ContextLevel::Symbols, &Selection::new())
-        .expect("symbols ok");
+    represent_file(
+        &graph,
+        &empty,
+        path,
+        ContextLevel::Symbols,
+        &Selection::new(),
+    )
+    .expect("symbols ok");
     represent_file(
         &graph,
         &empty,

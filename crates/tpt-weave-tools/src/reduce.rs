@@ -74,9 +74,7 @@ pub fn reduce(kind: ToolKind, output: &ToolOutput) -> Reduction {
         ToolKind::CargoCheck => cargo::diagnostic_output(&text, "CHECK", output.exit_code),
         ToolKind::CargoClippy => cargo::diagnostic_output(&text, "CLIPPY", output.exit_code),
         ToolKind::CargoBuild => cargo::diagnostic_output(&text, "BUILD", output.exit_code),
-        ToolKind::Diagnostics => {
-            cargo::diagnostic_output(&text, "DIAGNOSTICS", output.exit_code)
-        }
+        ToolKind::Diagnostics => cargo::diagnostic_output(&text, "DIAGNOSTICS", output.exit_code),
         ToolKind::CargoFmt => cargo::fmt_output(&text, output.exit_code),
         ToolKind::GitStatus => git::status_output(&text, output.exit_code),
         ToolKind::GitDiff => git::diff_output(&text, output.exit_code),

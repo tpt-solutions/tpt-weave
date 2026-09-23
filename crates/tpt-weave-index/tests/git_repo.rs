@@ -128,10 +128,7 @@ fn discover_reports_missing_repository() {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!(
-        "tpt-weave-norepo-{}-{nanos}",
-        std::process::id()
-    ));
+    let dir = std::env::temp_dir().join(format!("tpt-weave-norepo-{}-{nanos}", std::process::id()));
     fs::create_dir_all(&dir).unwrap();
     let err = GitRepository::discover(&dir).expect_err("no repo here");
     assert!(matches!(err, GitError::NotARepository(_)), "{err:?}");

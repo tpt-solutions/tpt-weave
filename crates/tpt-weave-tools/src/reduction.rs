@@ -64,11 +64,7 @@ impl Reduction {
     /// Stores the raw output locally and records its expansion path
     /// (todo.md Phase 6: "Store raw output locally", "Provide expansion
     /// mechanism").
-    pub fn store_raw(
-        &mut self,
-        output: &ToolOutput,
-        store: &RawStore,
-    ) -> io::Result<PathBuf> {
+    pub fn store_raw(&mut self, output: &ToolOutput, store: &RawStore) -> io::Result<PathBuf> {
         let path = store.store(output)?;
         self.detail = Some(path.clone());
         Ok(path)

@@ -1,8 +1,8 @@
 //! End-to-end context flow through the public core API.
 
 use tpt_weave_core::{
-    ContextCandidate, ContextLevel, ContextRequest, ContextResponse, ContextSource, Manifest,
-    RepositoryId, Revision, SymbolId, SymbolKind, TokenAccounting, FileRecord,
+    ContextCandidate, ContextLevel, ContextRequest, ContextResponse, ContextSource, FileRecord,
+    Manifest, RepositoryId, Revision, SymbolId, SymbolKind, TokenAccounting,
 };
 
 #[test]
@@ -51,7 +51,10 @@ fn context_flow_from_request_to_response() {
     let first = make_response();
     assert_eq!(first.context_id, make_response().context_id);
     assert_eq!(first.total_tokens(), 7_842);
-    assert_eq!(first.decision_provider.as_deref(), Some("typesafe/jev-1.13"));
+    assert_eq!(
+        first.decision_provider.as_deref(),
+        Some("typesafe/jev-1.13")
+    );
 
     // The response must round-trip through JSON (index artefacts are JSON).
     let json = serde_json::to_string(&first).expect("serialise");
@@ -61,7 +64,10 @@ fn context_flow_from_request_to_response() {
 
 #[test]
 fn level_and_revision_helpers() {
-    assert_eq!(tpt_weave_core::ContextLevel::from_number(5).unwrap().name(), "full");
+    assert_eq!(
+        tpt_weave_core::ContextLevel::from_number(5).unwrap().name(),
+        "full"
+    );
     let revision = Revision::new("abcdef0123456789abcdef0123456789abcdef01").with_branch("main");
     assert_eq!(revision.short(), "abcdef012345");
 

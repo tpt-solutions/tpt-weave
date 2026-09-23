@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tpt_weave_core::{RepositoryId, Revision, SymbolKind, SCHEMA_VERSION};
+use tpt_weave_core::{RepositoryId, Revision, SCHEMA_VERSION, SymbolKind};
 use tpt_weave_index::DependencyKind;
 use tpt_weave_rust::SymbolRecord;
 
@@ -130,7 +130,10 @@ impl RepositoryGraph {
 
     /// Module graph nodes of a package.
     pub fn modules_of(&self, package: &str) -> Vec<&ModuleNode> {
-        self.modules.iter().filter(|m| m.package == package).collect()
+        self.modules
+            .iter()
+            .filter(|m| m.package == package)
+            .collect()
     }
 
     /// Full dependency graph edges of a package (internal + external).
@@ -249,7 +252,11 @@ impl RepositoryGraph {
             .external_links
             .iter()
             .map(|l| l.repository.clone())
-            .chain(self.dependencies.iter().filter_map(|e| e.repository.clone()))
+            .chain(
+                self.dependencies
+                    .iter()
+                    .filter_map(|e| e.repository.clone()),
+            )
             .collect();
         repos.sort();
         repos.dedup();
@@ -262,5 +269,3 @@ impl RepositoryGraph {
         self.schema != SCHEMA_VERSION || self.revision.sha != revision.sha
     }
 }
-
-

@@ -9,9 +9,7 @@ use std::fmt;
 
 /// Hierarchical representation level (spec.md section 9). Declaration order
 /// defines the partial order: `Metadata < ... < Full`.
-#[derive(
-    Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ContextLevel {
     /// Level 0 — path, module, LOC, export counts.
@@ -238,4 +236,3 @@ impl ContextResponse {
             .sum()
     }
 }
-

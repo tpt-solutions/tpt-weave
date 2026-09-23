@@ -1,7 +1,7 @@
 //! Mention extraction feeding the graph (todo.md Phase 3).
 
 use tpt_weave_core::{RepositoryId, SymbolKind};
-use tpt_weave_rust::{parse_file, FileInput, MentionKind, ParsedFile};
+use tpt_weave_rust::{FileInput, MentionKind, ParsedFile, parse_file};
 
 fn parsed(source: &str) -> ParsedFile {
     let repository = RepositoryId::new("demo");
@@ -132,9 +132,6 @@ fn dedupes_names_keeping_the_most_specific_kind() {
     // name seen both ways — `Pixel` appears as return type and literal.
     let file = parsed(SAMPLE);
     let make = mentions_of(&file, "make");
-    let pixel_entries = make
-        .iter()
-        .filter(|(name, _)| name == "Pixel")
-        .count();
+    let pixel_entries = make.iter().filter(|(name, _)| name == "Pixel").count();
     assert_eq!(pixel_entries, 1, "one deduped mention per name: {make:?}");
 }

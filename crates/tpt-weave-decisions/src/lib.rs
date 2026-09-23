@@ -20,7 +20,7 @@ mod schema;
 pub use engine::{DecisionEngine, DecisionLog, DecisionRecord};
 pub use policy::{DecisionPolicy, DecisionSource, Judgement, SafetyOverride};
 pub use provider::{
-    DecisionProvider, DeterministicFallbackProvider, MockProvider, ProviderError,
-    FALLBACK_CONFIDENCE,
+    DecisionProvider, DeterministicFallbackProvider, FALLBACK_CONFIDENCE, MockProvider,
+    ProviderError,
 };
 pub use schema::{Decision, DecisionCategory, DecisionOutcome, DecisionRequest};
