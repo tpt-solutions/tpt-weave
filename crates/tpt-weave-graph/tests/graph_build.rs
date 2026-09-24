@@ -4,6 +4,8 @@ mod common;
 
 use common::{SRC, build, key_of};
 use tpt_weave_core::RepositoryId;
+use tpt_weave_graph::GraphBuilder;
+use tpt_weave_index::CargoIndex;
 use tpt_weave_rust::FileInput;
 
 #[test]
@@ -54,6 +56,69 @@ fn builds_symbol_table_and_module_graph() {
         .build();
     assert!(graph2.find_symbols("extra").len() == 1);
     assert!(graph2.find_symbols("make").len() == 1);
+}
+
+#[test]
+fn incremental_graph_reuses_unchanged_symbols_and_recomputes_edges() {
+    let cargo = CargoIndex::from_metadata_json(common::METADATA).expect("fixture");
+    let revision = tpt_weave_core::Revision::new("1111111111111111111111111111111111111111");
+    let previous = GraphBuilder::new("demo-repo", revision.clone(), cargo.clone())
+        .add_file("demo", common::parse("demo", "src/lib.rs", common::SRC))
+        .add_file(
+            "demo",
+            tpt_weave_rust::parse_file(
+                &FileInput {
+                    repository: &RepositoryId::new("demo-repo"),
+                    package: "demo",
+                    path: "src/other.rs",
+                    module_prefix: &[],
+                },
+                "pub fn other() { make(); }",
+            )
+            .expect("other parses"),
+        )
+        .build();
+
+    let updated_source = "pub fn make() -> u64 { 7 }";
+    let changed = tpt_weave_rust::parse_file(
+        &FileInput {
+            repository: &RepositoryId::new("demo-repo"),
+            package: "demo",
+            path: "src/lib.rs",
+            module_prefix: &[],
+        },
+        updated_source,
+    )
+    .expect("updated parses");
+    let updated = GraphBuilder::new("demo-repo", revision, cargo)
+        .add_file("demo", changed)
+        .add_file(
+            "demo",
+            tpt_weave_rust::parse_file(
+                &FileInput {
+                    repository: &RepositoryId::new("demo-repo"),
+                    package: "demo",
+                    path: "src/other.rs",
+                    module_prefix: &[],
+                },
+                "pub fn other() { make(); }",
+            )
+            .expect("other parses"),
+        )
+        .build_incremental(&previous, &["src/lib.rs".to_string()]);
+
+    assert!(
+        updated
+            .find_symbols("make")
+            .iter()
+            .any(|s| s.signature.contains("u64"))
+    );
+    assert!(
+        updated
+            .references
+            .iter()
+            .any(|edge| { edge.to.ends_with("make#fn") && edge.from.ends_with("other#fn") })
+    );
 }
 
 #[test]

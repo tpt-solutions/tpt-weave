@@ -314,12 +314,31 @@ fn from_config_reads_endpoint_model_and_key_env() {
         api_key_env: "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string(),
         ..Default::default()
     };
-    let err = match OpenRouterProvider::from_config(&jev, &provider_cfg) {
-        Ok(_) => panic!("expected missing API key error"),
-        Err(err) => err,
+    let privacy = PrivacyConfig {
+        remote_decisions: true,
+        ..PrivacyConfig::default()
     };
+    let err =
+        match OpenRouterProvider::from_config_with_privacy(&jev, &provider_cfg, &privacy, None) {
+            Ok(_) => panic!("expected missing API key error"),
+            Err(err) => err,
+        };
     assert!(
         matches!(err, ProviderError::MissingApiKey { .. }),
         "{err:?}"
     );
+}
+
+#[test]
+fn from_config_fails_closed_for_local_only_privacy() {
+    let jev = JevConfig::default();
+    let provider_cfg = ProviderConfig {
+        api_key_env: "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string(),
+        ..Default::default()
+    };
+    let err = match OpenRouterProvider::from_config(&jev, &provider_cfg) {
+        Ok(_) => panic!("expected local-only policy error"),
+        Err(err) => err,
+    };
+    assert!(matches!(err, ProviderError::Privacy { .. }), "{err:?}");
 }

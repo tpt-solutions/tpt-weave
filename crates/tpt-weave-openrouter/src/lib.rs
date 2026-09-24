@@ -191,6 +191,9 @@ impl OpenRouterProvider {
         privacy: PrivacyConfig,
         audit: Option<RemoteAuditLog>,
     ) -> Result<Self, ProviderError> {
+        privacy.validate().map_err(|error| ProviderError::Privacy {
+            detail: error.to_string(),
+        })?;
         if !privacy.remote_decisions {
             return Err(ProviderError::Privacy {
                 detail: "remote decisions are disabled by privacy policy".to_string(),
@@ -228,20 +231,11 @@ impl OpenRouterProvider {
     }
 
     /// Builds a client from manifest configuration, reading the API key
-    /// from the configured environment variable name. This compatibility
-    /// constructor explicitly enables remote decisions; new integrations
-    /// should pass the manifest's privacy policy to
-    /// [`Self::from_config_with_privacy`].
+    /// from the configured environment variable name. The default privacy policy
+    /// is local-only; pass [`Self::from_config_with_privacy`] to opt in to
+    /// remote decisions explicitly.
     pub fn from_config(jev: &JevConfig, provider: &ProviderConfig) -> Result<Self, ProviderError> {
-        Self::from_config_with_privacy(
-            jev,
-            provider,
-            &PrivacyConfig {
-                remote_decisions: true,
-                ..PrivacyConfig::default()
-            },
-            None,
-        )
+        Self::from_config_with_privacy(jev, provider, &PrivacyConfig::default(), None)
     }
 
     /// Builds a client from manifest configuration and privacy policy.

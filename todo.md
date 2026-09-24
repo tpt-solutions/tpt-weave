@@ -1,14 +1,10 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-24):** Phases 0–12 complete (repository + decisions, core model + manifest
-> configuration, cargo/git/syn indexer, symbol graph, hierarchical representations + expansion,
-> deterministic context retrieval, tool output reduction, filesystem cache, JEv decision
-> provider/OpenRouter client/policy engine, MCP server with 11 tools + tool minimisation, CLI
-> with all planned subcommands + human/JSON/compact output + exit codes, evaluation harness with
-> baseline/weave captures + net-token-reduction metrics + local adopt benchmark; Phase 12
-> integrations: tpt-infer indexed + retrieval verified (91.9 % net reduction), tpt-uir and
-> tpt-raglite evaluated (`docs/integrations/`), tpt-code-command-center routing Rust context
-> through the shared index with dashboard + measured baseline/post numbers). Phases 13–20 pending.
+> **Status (2026-09-24):** Phases 0–16 are implemented. Phase 15 includes deterministic performance
+> work, parallel parsing, a fingerprint-keyed parse cache, and benchmark primitives. Phase 16 includes
+> secret redaction, path privacy, fail-closed local-only provider construction, and content-free remote
+> audit logging. Phase 17 includes experiment-matrix and benchmark APIs; live JEv/production workload
+> measurements remain data-collection work. Phases 17 measurement items and 18–20 remain pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -445,10 +441,10 @@ profiling.
 - [x] test redaction.
 - [x] document threat model.
 
-Source discovery and indexing apply the privacy policy before reading files.
-Remote OpenRouter requests redact questions, choices, and state, reject
-local-only configurations, and can append content-free JSONL audit records.
-The threat model is documented in `docs/privacy.md`.
+Source discovery and indexing apply both default exclusion patterns and configured private paths
+before reading files, and source walkers do not follow symlink entries. Remote OpenRouter requests
+redact questions, choices, and state, reject local-only configurations, and can append content-free
+JSONL audit records. The threat model is documented in `docs/privacy.md`.
 
 ## Phase 17 — Optimisation Experiments
 

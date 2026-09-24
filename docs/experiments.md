@@ -10,7 +10,8 @@ variant into a claimed result.
 - `tpt_weave_eval::benchmark_cache` measures a cache miss/store followed by hits.
 - `tpt_weave_mcp::benchmark_tool` measures repeated MCP tool dispatch.
 - `tpt_weave_eval::hierarchy_measurements` records metadata, symbols,
-  signatures, skeleton, implementation, and full-source token variants.
+  signatures, skeleton, targeted implementation, and full-source token variants.
+- `hierarchy_measurements_with_selection` permits an explicitly measured level-4 selection.
 - `tpt_weave_eval::tool_output_measurements` records raw, deterministic, and
   optional JEv-augmented tool-output variants.
 - `VariantMeasurement` and `ExperimentSuite` carry accuracy, JEv overhead,

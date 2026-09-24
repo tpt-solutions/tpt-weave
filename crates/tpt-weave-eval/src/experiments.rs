@@ -59,7 +59,13 @@ impl VariantMeasurement {
             / self.raw_tokens as f64)
     }
 
-    /// Adds a string-valued measurement annotation.
+    /// Adds an externally measured accuracy in `[0, 1]`.
+    pub fn with_accuracy(mut self, accuracy: f64) -> Self {
+        self.accuracy = Some(accuracy.clamp(0.0, 1.0));
+        self
+    }
+
+    /// Adds string-valued measurement annotation.
     pub fn with_metadata(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.metadata.insert(key.into(), value.into());
         self
@@ -116,10 +122,27 @@ impl ExperimentSuite {
 }
 
 /// Records all six hierarchical representation levels for one source file.
+/// At level 4 every symbol in the file is selected, making the result a
+/// meaningful targeted-implementation measurement.
 pub fn hierarchy_measurements(
     graph: &RepositoryGraph,
     sources: &dyn SourceProvider,
     path: &str,
+) -> Result<Vec<VariantMeasurement>, ContextError> {
+    let selection: Selection = graph
+        .symbols
+        .iter()
+        .filter(|record| record.file == path)
+        .collect();
+    hierarchy_measurements_with_selection(graph, sources, path, &selection)
+}
+
+/// Records all levels with an explicit level-4 selection.
+pub fn hierarchy_measurements_with_selection(
+    graph: &RepositoryGraph,
+    sources: &dyn SourceProvider,
+    path: &str,
+    selection: &Selection,
 ) -> Result<Vec<VariantMeasurement>, ContextError> {
     let raw_tokens = sources
         .source(path)
@@ -129,7 +152,7 @@ pub fn hierarchy_measurements(
     let mut cases = Vec::with_capacity(ContextLevel::ALL.len());
     for level in ContextLevel::ALL {
         let started = Instant::now();
-        let representation = represent_file(graph, sources, path, level, &Selection::new())?;
+        let representation = represent_file(graph, sources, path, level, selection)?;
         cases.push(
             VariantMeasurement::new(
                 level.name(),
@@ -137,7 +160,8 @@ pub fn hierarchy_measurements(
                 u64::from(representation.token_estimate),
                 started.elapsed().as_millis() as u64,
             )
-            .with_metadata("path", path),
+            .with_metadata("path", path)
+            .with_metadata("selected_symbols", selection.len().to_string()),
         );
     }
     Ok(cases)
@@ -184,6 +208,38 @@ pub fn tool_output_measurements(
         }
     }
     ExperimentSuite::new("tool_output", cases)
+}
+
+/// Four-way Phase 17 cache matrix. Values are measured by the caller.
+pub fn cache_measurements(
+    no_cache: VariantMeasurement,
+    file_cache: VariantMeasurement,
+    context_cache: VariantMeasurement,
+    tool_result_cache: VariantMeasurement,
+) -> ExperimentSuite {
+    ExperimentSuite::new(
+        "cache",
+        vec![no_cache, file_cache, context_cache, tool_result_cache],
+    )
+}
+
+/// Four-way Phase 17 cross-repository retrieval matrix. Values are measured
+/// by the caller; JEv traversal is never synthesised.
+pub fn cross_repository_measurements(
+    no_traversal: VariantMeasurement,
+    full_traversal: VariantMeasurement,
+    deterministic_traversal: VariantMeasurement,
+    jev_selected_traversal: VariantMeasurement,
+) -> ExperimentSuite {
+    ExperimentSuite::new(
+        "cross_repository_retrieval",
+        vec![
+            no_traversal,
+            full_traversal,
+            deterministic_traversal,
+            jev_selected_traversal,
+        ],
+    )
 }
 
 /// Builds a suite from externally measured A–E variants. The caller remains

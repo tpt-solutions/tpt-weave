@@ -90,6 +90,18 @@ fn reads_are_deferred_until_first_request_then_cached() {
 }
 
 #[test]
+fn private_relative_paths_are_excluded_before_discovery() {
+    let root = fixture();
+    let mut privacy = PrivacyConfig::default();
+    privacy.private_paths.push("src".to_string());
+    let eager = tpt_weave_context::Sources::load_dir_with_privacy(&root, &privacy).expect("eager");
+    let lazy = LazySources::open_with_privacy(&root, &privacy).expect("lazy");
+    assert_eq!(eager.source("src/lib.rs"), None);
+    assert_eq!(lazy.source("src/lib.rs"), None);
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
 fn private_absolute_paths_are_excluded_before_discovery() {
     let root = fixture();
     let mut privacy = PrivacyConfig::default();

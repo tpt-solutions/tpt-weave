@@ -68,18 +68,25 @@ fn collect(
         if name == "target" || name == ".git" || name == ".tpt-weave" {
             continue;
         }
+        let file_type = entry.file_type()?;
+        if file_type.is_symlink() {
+            continue;
+        }
         let path = entry.path();
-        if path.is_dir() {
+        let relative = path
+            .strip_prefix(root)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        if privacy.is_excluded(&relative)
+            || privacy.is_private_path(&relative)
+            || privacy.is_private_path(&path.to_string_lossy())
+        {
+            continue;
+        }
+        if file_type.is_dir() {
             collect(&path, root, privacy, out)?;
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
-            let relative = path
-                .strip_prefix(root)
-                .unwrap_or(&path)
-                .to_string_lossy()
-                .replace('\\', "/");
-            if privacy.is_excluded(&relative) || privacy.is_private_path(&path.to_string_lossy()) {
-                continue;
-            }
+        } else if file_type.is_file() && path.extension().is_some_and(|ext| ext == "rs") {
             out.insert(relative, std::fs::read_to_string(&path)?);
         }
     }
@@ -143,18 +150,25 @@ fn collect_paths(
         if name == "target" || name == ".git" || name == ".tpt-weave" {
             continue;
         }
+        let file_type = entry.file_type()?;
+        if file_type.is_symlink() {
+            continue;
+        }
         let path = entry.path();
-        if path.is_dir() {
+        let relative = path
+            .strip_prefix(root)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        if privacy.is_excluded(&relative)
+            || privacy.is_private_path(&relative)
+            || privacy.is_private_path(&path.to_string_lossy())
+        {
+            continue;
+        }
+        if file_type.is_dir() {
             collect_paths(&path, root, privacy, out)?;
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
-            let relative = path
-                .strip_prefix(root)
-                .unwrap_or(&path)
-                .to_string_lossy()
-                .replace('\\', "/");
-            if privacy.is_excluded(&relative) || privacy.is_private_path(&path.to_string_lossy()) {
-                continue;
-            }
+        } else if file_type.is_file() && path.extension().is_some_and(|ext| ext == "rs") {
             out.insert(relative, OnceCell::new());
         }
     }

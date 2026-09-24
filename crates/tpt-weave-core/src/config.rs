@@ -289,22 +289,22 @@ impl PrivacyConfig {
         Ok(())
     }
 
-    /// Returns `true` when `rel_path` matches an exclusion or private-path
-    /// pattern.
+    /// Returns `true` when `rel_path` matches a configured exclusion pattern.
     pub fn is_excluded(&self, rel_path: &str) -> bool {
         let path = rel_path.replace('\\', "/");
         self.exclude
             .iter()
             .any(|pattern| matches_pattern(pattern, &path))
-            || self
-                .private_paths
-                .iter()
-                .any(|pattern| matches_private_path(pattern, &path))
     }
 
-    /// Returns `true` when an absolute or relative path is private.
+    /// Returns `true` when an absolute or relative path matches a configured
+    /// private path. This is intentionally separate from [`Self::is_excluded`]
+    /// so callers can report which policy caused a rejection.
     pub fn is_private_path(&self, path: &str) -> bool {
-        self.is_excluded(path)
+        let path = path.replace('\\', "/");
+        self.private_paths
+            .iter()
+            .any(|pattern| matches_private_path(pattern, &path))
     }
 }
 

@@ -32,6 +32,7 @@ fn reuses_unchanged_files_and_reparses_changed_source() {
     let reused = second.parse_files(vec![input.clone()]);
     assert_eq!(second.stats().hits, 1);
     assert_eq!(second.stats().misses, 0);
+    assert!(second.changed_paths().is_empty());
     assert_eq!(reused, initial);
 
     let mut changed = input;
@@ -40,6 +41,7 @@ fn reuses_unchanged_files_and_reparses_changed_source() {
     let reparsed = third.parse_files(vec![changed]);
     assert_eq!(third.stats().hits, 0);
     assert_eq!(third.stats().misses, 1);
+    assert_eq!(third.changed_paths(), ["src/lib.rs"]);
     assert_eq!(reparsed.len(), 1);
 
     let _ = std::fs::remove_dir_all(root);

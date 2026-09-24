@@ -92,6 +92,7 @@ pub fn benchmark_decision_provider(
     request: &DecisionRequest,
     rounds: u32,
 ) -> BenchmarkReport {
+    let rounds = rounds.max(1);
     let mut durations = Vec::with_capacity(rounds as usize);
     let mut errors = 0u64;
     let mut input_tokens = 0u64;

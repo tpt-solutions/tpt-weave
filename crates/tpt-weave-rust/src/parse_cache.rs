@@ -23,6 +23,7 @@ pub struct ParseCacheStats {
 pub struct ParseCache {
     root: PathBuf,
     stats: ParseCacheStats,
+    changed_paths: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,6 +40,7 @@ impl ParseCache {
         Self {
             root: root.into(),
             stats: ParseCacheStats::default(),
+            changed_paths: Vec::new(),
         }
     }
 
@@ -57,6 +59,12 @@ impl ParseCache {
         self.stats
     }
 
+    /// Repository-relative paths whose contents were reparsed in this run.
+    /// The list is sorted and deduplicated.
+    pub fn changed_paths(&self) -> &[String] {
+        &self.changed_paths
+    }
+
     /// Reuses cached parse results and reparses only changed fingerprints.
     pub fn parse_files(&mut self, mut inputs: Vec<ParseFileInput>) -> Vec<ParsedSource> {
         inputs.sort_by(|left, right| {
@@ -67,6 +75,8 @@ impl ParseCache {
         let mut cached = Vec::with_capacity(inputs.len());
         let mut misses = Vec::new();
         let mut fingerprints = BTreeMap::new();
+        self.stats = ParseCacheStats::default();
+        self.changed_paths.clear();
         for input in inputs {
             let fingerprint = fingerprint(&input);
             if let Some(file) = self.read(&input, &fingerprint) {
@@ -77,6 +87,7 @@ impl ParseCache {
                 });
             } else {
                 self.stats.misses += 1;
+                self.changed_paths.push(input.path.clone());
                 fingerprints.insert((input.package.clone(), input.path.clone()), fingerprint);
                 misses.push(input);
             }
@@ -92,6 +103,8 @@ impl ParseCache {
             }
         }
         cached.extend(parsed);
+        self.changed_paths.sort();
+        self.changed_paths.dedup();
         cached.sort_by(|left, right| {
             left.file
                 .path
@@ -140,8 +153,10 @@ impl ParseCache {
 
 fn fingerprint(input: &ParseFileInput) -> String {
     let material = format!(
-        "{}\u{1f}{}",
+        "{}\u{1f}{}\u{1f}{}\u{1f}{}",
+        input.repository.as_str(),
         input.module_prefix.join("\u{1f}"),
+        input.path,
         input.source
     );
     fnv1a64_hex(material.as_bytes())

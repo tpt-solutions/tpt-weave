@@ -64,6 +64,7 @@ impl Workspace {
             .map(|m| m.privacy.clone())
             .unwrap_or_default();
         let cargo = CargoIndex::load(&root)?;
+        let previous_graph = RepositoryGraph::load(&graph_path(&root)).ok();
         let sources = LazySources::open_with_privacy(&root, &privacy)
             .map_err(|e| CliError::internal(format!("failed to load sources: {e}")))?;
 
@@ -104,7 +105,10 @@ impl Workspace {
                 "no parseable Rust sources found under workspace packages",
             ));
         }
-        let graph = builder.build();
+        let graph = match previous_graph {
+            Some(previous) => builder.build_incremental(&previous, parse_cache.changed_paths()),
+            None => builder.build(),
+        };
         Ok(Self {
             root,
             graph,
@@ -269,10 +273,16 @@ fn walk(
         if name == "target" || name == ".git" || name == ".tpt-weave" {
             continue;
         }
+        let file_type = entry
+            .file_type()
+            .map_err(|e| CliError::internal(format!("{}: {e}", entry.path().display())))?;
+        if file_type.is_symlink() {
+            continue;
+        }
         let path = entry.path();
-        if path.is_dir() {
+        if file_type.is_dir() {
             walk(&path, repo_root, privacy, out)?;
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
+        } else if file_type.is_file() && path.extension().is_some_and(|ext| ext == "rs") {
             let relative = match path.strip_prefix(repo_root) {
                 Ok(rel) => rel.to_string_lossy().replace('\\', "/"),
                 Err(_) => match path.canonicalize() {
@@ -283,7 +293,10 @@ fn walk(
                     Err(_) => path.to_string_lossy().replace('\\', "/"),
                 },
             };
-            if privacy.is_excluded(&relative) || privacy.is_private_path(&path.to_string_lossy()) {
+            if privacy.is_excluded(&relative)
+                || privacy.is_private_path(&relative)
+                || privacy.is_private_path(&path.to_string_lossy())
+            {
                 continue;
             }
             let text = std::fs::read_to_string(&path)

@@ -4,7 +4,7 @@ use crate::model::{
     CrateNode, DependencyEdge, ExternalLink, ModuleNode, ReferenceEdge, ReferenceKind,
     RepositoryGraph,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use tpt_weave_core::{RepositoryId, Revision, SCHEMA_VERSION, SymbolKind};
 use tpt_weave_index::CargoIndex;
 use tpt_weave_rust::{Mention, MentionKind, ParsedFile, SymbolRecord};
@@ -65,6 +65,30 @@ impl GraphBuilder {
 
     /// Builds the [`RepositoryGraph`] deterministically from the inputs.
     pub fn build(self) -> RepositoryGraph {
+        self.build_inner(None, &[])
+    }
+
+    /// Builds an updated graph while reusing symbols from `previous` for
+    /// files not listed in `changed_files`.
+    ///
+    /// Modules, dependencies, and all reference edges are recomputed from the
+    /// complete current file set. This is deliberately conservative: a changed
+    /// symbol can affect resolution in any other file, so no stale edge is
+    /// retained. Unchanged symbol records are still reused, which is the
+    /// expensive parse/extraction result this API is designed to preserve.
+    pub fn build_incremental(
+        self,
+        previous: &RepositoryGraph,
+        changed_files: &[String],
+    ) -> RepositoryGraph {
+        self.build_inner(Some(previous), changed_files)
+    }
+
+    fn build_inner(
+        self,
+        previous: Option<&RepositoryGraph>,
+        changed_files: &[String],
+    ) -> RepositoryGraph {
         // Crate graph nodes.
         let crates: Vec<CrateNode> = self
             .cargo
@@ -84,9 +108,33 @@ impl GraphBuilder {
             .map(|p| p.name.as_str())
             .collect();
 
-        // Symbol table (all files) + module graph nodes.
+        // Symbol table. Reuse records from the previous graph for unchanged
+        // files, while taking every changed/new file from the current parse.
+        let changed: BTreeSet<String> = changed_files
+            .iter()
+            .map(|path| path.replace('\\', "/"))
+            .collect();
+        let can_reuse = previous.is_some_and(|graph| {
+            graph.schema == SCHEMA_VERSION && graph.repository == self.repository
+        });
         let mut symbols: Vec<SymbolRecord> = Vec::new();
-        for (_, file) in &self.files {
+        for (package, file) in &self.files {
+            if can_reuse
+                && !changed.contains(&file.path.replace('\\', "/"))
+                && !file.symbols.is_empty()
+            {
+                let reused = previous
+                    .expect("checked above")
+                    .symbols
+                    .iter()
+                    .filter(|symbol| symbol.file == file.path && symbol.id.package == *package)
+                    .cloned()
+                    .collect::<Vec<_>>();
+                if !reused.is_empty() {
+                    symbols.extend(reused);
+                    continue;
+                }
+            }
             symbols.extend(file.symbols.iter().cloned());
         }
         let mut modules: Vec<ModuleNode> = Vec::new();

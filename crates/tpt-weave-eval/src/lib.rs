@@ -27,8 +27,10 @@ pub use bench::{
 };
 pub use capture::{BaselineCapture, WeaveCapture};
 pub use experiments::{
-    EXPERIMENT_REPORT_SCHEMA, ExperimentSuite, VariantMeasurement, comparison_suite,
-    hierarchy_measurements, jev_relevance_measurements, reduction_tokens, tool_output_measurements,
+    EXPERIMENT_REPORT_SCHEMA, ExperimentSuite, VariantMeasurement, cache_measurements,
+    comparison_suite, cross_repository_measurements, hierarchy_measurements,
+    hierarchy_measurements_with_selection, jev_relevance_measurements, reduction_tokens,
+    tool_output_measurements,
 };
 pub use harness::{
     HarnessError, LocalComparison, full_source_tokens, local_aggregate, local_comparison,

@@ -3,8 +3,9 @@
 use tpt_weave_context::Sources;
 use tpt_weave_core::{ContextLevel, RepositoryId, Revision, SCHEMA_VERSION};
 use tpt_weave_eval::{
-    ExperimentSuite, VariantMeasurement, comparison_suite, hierarchy_measurements,
-    jev_relevance_measurements, tool_output_measurements,
+    ExperimentSuite, VariantMeasurement, cache_measurements, comparison_suite,
+    cross_repository_measurements, hierarchy_measurements, jev_relevance_measurements,
+    tool_output_measurements,
 };
 use tpt_weave_graph::RepositoryGraph;
 use tpt_weave_tools::{ToolKind, ToolOutput};
@@ -48,6 +49,35 @@ fn tool_and_jev_suites_include_reductions_and_overhead() {
     let jev = jev_relevance_measurements(100, 40, Some(0.8), 35, Some(0.9), 10);
     assert_eq!(jev.cases.len(), 2);
     assert!(jev.net_token_reduction() > 0.0);
+}
+
+#[test]
+fn four_way_measurement_matrices_are_explicit() {
+    let case = |name: &str, delivered: u64| {
+        VariantMeasurement::new(name, 100, delivered, 1).with_accuracy(0.75)
+    };
+    let cache = cache_measurements(
+        case("no_cache", 100),
+        case("file_cache", 80),
+        case("context_cache", 60),
+        case("tool_result_cache", 50),
+    );
+    assert_eq!(cache.cases.len(), 4);
+    assert_eq!(cache.cases[3].variant, "tool_result_cache");
+
+    let traversal = cross_repository_measurements(
+        case("no_traversal", 10),
+        case("full_traversal", 100),
+        case("deterministic_traversal", 40),
+        case("jev_selected_traversal", 20),
+    );
+    assert_eq!(traversal.experiment, "cross_repository_retrieval");
+    assert!(
+        traversal
+            .cases
+            .iter()
+            .all(|case| case.accuracy == Some(0.75))
+    );
 }
 
 #[test]

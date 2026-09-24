@@ -7,12 +7,9 @@ workspaces deterministically, builds hierarchical source representations, and de
 coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
 information required to complete the task correctly.
 
-> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–11 of
-> [todo.md](todo.md) are complete (repository scaffold, architecture decisions, core types and
-> configuration, indexer, symbol graph, hierarchical representations, deterministic context
-> retrieval, tool output reduction, filesystem cache, JEv decision provider + OpenRouter client +
-> policy engine, MCP server with 11 tools and tool minimisation, CLI with all planned
-> subcommands, evaluation harness + adopt baseline benchmark). All other phases are pending.
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–16 are implemented,
+> with Phase 15 performance work, Phase 16 privacy/security controls, and Phase 17 experiment/benchmark
+> APIs. Live JEv/production workload measurements and Phases 18–20 remain pending.
 
 ## Core principle
 

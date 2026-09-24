@@ -1,7 +1,7 @@
 //! Phase 8 decision provider/policy/engine tests (todo.md Phase 8).
 
 use std::time::Duration;
-use tpt_weave_core::{JevConfig, ProviderConfig};
+use tpt_weave_core::{JevConfig, PrivacyConfig, ProviderConfig};
 use tpt_weave_decisions::{
     Decision, DecisionCategory, DecisionEngine, DecisionOutcome, DecisionProvider, DecisionRequest,
     DecisionSource, DeterministicFallbackProvider, FALLBACK_CONFIDENCE, MockProvider,
@@ -276,16 +276,24 @@ fn config_built_from_jev_and_provider_config_reads_key_from_env_name() {
         api_key_env: "TPT_WEAVE_TEST_NO_SUCH_KEY_VAR".to_string(),
         ..Default::default()
     };
-    let err = tpt_weave_openrouter_shim(&jev, &provider);
+    let privacy = PrivacyConfig {
+        remote_decisions: true,
+        ..PrivacyConfig::default()
+    };
+    let err = tpt_weave_openrouter_shim(&jev, &provider, &privacy);
     assert!(
         err.contains("missing API key"),
         "expected missing-key error, got: {err}"
     );
 }
 
-fn tpt_weave_openrouter_shim(jev: &JevConfig, provider: &ProviderConfig) -> String {
+fn tpt_weave_openrouter_shim(
+    jev: &JevConfig,
+    provider: &ProviderConfig,
+    privacy: &PrivacyConfig,
+) -> String {
     use tpt_weave_openrouter::OpenRouterProvider;
-    OpenRouterProvider::from_config(jev, provider)
+    OpenRouterProvider::from_config_with_privacy(jev, provider, privacy, None)
         .err()
         .map(|err| err.to_string())
         .unwrap_or_else(|| "unexpected success".to_string())
