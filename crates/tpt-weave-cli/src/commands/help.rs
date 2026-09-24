@@ -26,6 +26,7 @@ Commands:
   cache [status|clear]      cache management (default: status)
   integration agent|mcp|registry  emit standard integration metadata (--write)
   workload <capture.jsonl>   aggregate Phase 18 workload events (--duration seconds)
+  experiment accuracy <corpus.json>  evaluate a labeled local corpus deterministically
   help                      show this help
   version                   show version
 

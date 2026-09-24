@@ -23,10 +23,28 @@ variant into a claimed result.
   D, and E. `ExperimentSuite::save`/`load` and `from_json` validate the report
   schema, unique variant names, and supplied accuracy ranges.
 
+## Local accuracy corpus
+
+The checked-in `docs/accuracy-corpus.example.json` is a small labeled fixture for
+validating the experiment pipeline. Evaluate it with the deterministic fallback
+provider:
+
+```sh
+tpt-weave --json experiment accuracy docs/accuracy-corpus.example.json
+```
+
+This command reports corpus size, correct/incorrect/error counts, and accuracy.
+It is a reproducible local measurement, not a live OpenRouter/JEv quality
+claim. A real labeled corpus should be reviewed for privacy and task
+representativeness before using its result in a release decision.
+
 ## Experiment matrix
 
 Experiment A — JEv relevance: compare deterministic-only with
- deterministic + JEv; record accuracy and JEv input tokens.
+ deterministic + JEv; record accuracy and JEv input tokens. The local
+ labeled-corpus path is available as `tpt-weave experiment accuracy <corpus.json>`
+ and deliberately evaluates the deterministic fallback provider; it is not a
+ live JEv quality claim.
 
 Experiment B — hierarchical source: use `hierarchy_measurements` for all six
 levels.

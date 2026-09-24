@@ -1237,6 +1237,7 @@ dependencies = [
  "tpt-weave-cache",
  "tpt-weave-context",
  "tpt-weave-core",
+ "tpt-weave-decisions",
  "tpt-weave-eval",
  "tpt-weave-graph",
  "tpt-weave-index",

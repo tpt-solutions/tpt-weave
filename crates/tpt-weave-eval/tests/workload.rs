@@ -62,6 +62,9 @@ fn jsonl_capture_round_trips_and_rejects_empty_or_invalid_input() {
     let jsonl = capture.to_jsonl().expect("serialise");
     let back = WorkloadCapture::from_jsonl(&jsonl).expect("parse");
     assert_eq!(back.events, capture.events);
+    let bom =
+        WorkloadCapture::from_jsonl(&format!("\u{feff}{jsonl}")).expect("parse UTF-8 BOM capture");
+    assert_eq!(bom.events, capture.events);
     let named =
         WorkloadCapture::from_jsonl_with_session_id("named-session", &jsonl).expect("named parse");
     assert_eq!(named.session_id, "named-session");

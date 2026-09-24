@@ -149,6 +149,9 @@ impl WorkloadCapture {
             if line.trim().is_empty() {
                 continue;
             }
+            // Windows PowerShell commonly writes a UTF-8 BOM. Treat it as an
+            // encoding marker, never as JSON data.
+            let line = line.strip_prefix('\u{feff}').unwrap_or(line);
             let event = serde_json::from_str(line).map_err(|error| WorkloadError::JsonLine {
                 line: line_number + 1,
                 error,

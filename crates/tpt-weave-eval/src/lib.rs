@@ -28,10 +28,11 @@ pub use bench::{
 };
 pub use capture::{BaselineCapture, WeaveCapture};
 pub use experiments::{
-    EXPERIMENT_REPORT_SCHEMA, ExperimentReportError, ExperimentSuite, VariantMeasurement,
-    cache_measurements, comparison_suite, cross_repository_measurements, hierarchy_measurements,
-    hierarchy_measurements_with_selection, jev_relevance_measurements, reduction_tokens,
-    tool_output_measurements,
+    ACCURACY_CORPUS_SCHEMA, AccuracyCorpus, AccuracyReport, EXPERIMENT_REPORT_SCHEMA,
+    ExperimentReportError, ExperimentSuite, LabeledDecision, VariantMeasurement,
+    cache_measurements, comparison_suite, cross_repository_measurements, evaluate_accuracy,
+    hierarchy_measurements, hierarchy_measurements_with_selection, jev_relevance_measurements,
+    reduction_tokens, tool_output_measurements,
 };
 pub use harness::{
     HarnessError, LocalComparison, full_source_tokens, local_aggregate, local_comparison,

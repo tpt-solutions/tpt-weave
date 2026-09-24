@@ -6,6 +6,7 @@ mod context;
 mod diff;
 mod doctor;
 mod expand;
+mod experiment;
 mod help;
 mod index;
 mod init;
@@ -83,5 +84,6 @@ pub fn dispatch(cli: &Cli) -> Result<Rendered, CliError> {
             capture,
             duration_seconds,
         } => workload::run(cli, capture, duration_seconds.as_deref()),
+        Command::Experiment { action } => experiment::run(cli, action.clone()),
     }
 }

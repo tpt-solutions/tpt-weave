@@ -47,6 +47,7 @@ tpt-weave stats                     # token accounting + cache statistics
 tpt-weave cache [status|clear]      # cache management (default: status)
 tpt-weave integration agent|mcp|registry  # standard adapter/registry metadata
 tpt-weave workload <capture.jsonl> [--duration <seconds>]  # aggregate Phase 18 workload events
+tpt-weave experiment accuracy <corpus.json>  # evaluate a labeled local corpus deterministically
 ```
 
 - `adopt` is sugar for `init` + `.gitignore` entries + `index --full` + cross-repository

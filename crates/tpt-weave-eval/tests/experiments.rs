@@ -2,10 +2,11 @@
 
 use tpt_weave_context::Sources;
 use tpt_weave_core::{ContextLevel, RepositoryId, Revision, SCHEMA_VERSION};
+use tpt_weave_decisions::{DecisionCategory, DeterministicFallbackProvider, MockProvider};
 use tpt_weave_eval::{
-    ExperimentSuite, VariantMeasurement, cache_measurements, comparison_suite,
-    cross_repository_measurements, hierarchy_measurements, jev_relevance_measurements,
-    tool_output_measurements,
+    AccuracyCorpus, ExperimentReportError, ExperimentSuite, LabeledDecision, VariantMeasurement,
+    cache_measurements, comparison_suite, cross_repository_measurements, evaluate_accuracy,
+    hierarchy_measurements, jev_relevance_measurements, tool_output_measurements,
 };
 use tpt_weave_graph::RepositoryGraph;
 use tpt_weave_tools::{ToolKind, ToolOutput};
@@ -78,6 +79,47 @@ fn four_way_measurement_matrices_are_explicit() {
             .iter()
             .all(|case| case.accuracy == Some(0.75))
     );
+}
+
+#[test]
+fn labeled_corpus_evaluates_provider_accuracy_and_errors() {
+    let provider = DeterministicFallbackProvider::new();
+    let cases = vec![
+        LabeledDecision::new(DecisionCategory::Relevance, "a", "same", "relevant"),
+        LabeledDecision::new(DecisionCategory::Relevance, "b", "same", "irrelevant"),
+    ];
+    let report = evaluate_accuracy(&provider, &cases).expect("valid corpus");
+    assert_eq!(report.total, 2);
+    assert_eq!(report.correct + report.incorrect + report.errors, 2);
+    assert_eq!(report.provider, "deterministic");
+    assert!((0.0..=1.0).contains(&report.accuracy));
+
+    let mock = MockProvider::answering("relevant", 0.9);
+    let all_relevant = vec![LabeledDecision::new(
+        DecisionCategory::Relevance,
+        "a",
+        "context",
+        "relevant",
+    )];
+    let exact = evaluate_accuracy(&mock, &all_relevant).expect("mock corpus");
+    assert_eq!(exact.accuracy, 1.0);
+    assert!(evaluate_accuracy(&mock, &[]).is_err());
+}
+
+#[test]
+fn corpus_file_loads_and_validates() {
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../docs/accuracy-corpus.example.json"
+    );
+    let corpus = AccuracyCorpus::load(path).expect("example corpus");
+    assert_eq!(corpus.schema, 1);
+    assert_eq!(corpus.cases.len(), 4);
+    let invalid = AccuracyCorpus::new(Vec::new());
+    assert!(matches!(
+        invalid.validate(),
+        Err(ExperimentReportError::Invalid(_))
+    ));
 }
 
 #[test]

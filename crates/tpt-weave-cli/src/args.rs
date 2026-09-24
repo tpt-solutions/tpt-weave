@@ -71,6 +71,8 @@ pub enum Command {
         capture: String,
         duration_seconds: Option<String>,
     },
+    /// Run a reproducible experiment command.
+    Experiment { action: ExperimentAction },
     /// Print usage and exit 0.
     Help,
     /// Print version and exit 0.
@@ -96,6 +98,13 @@ pub enum IntegrationAction {
     Mcp,
     /// Registry status and discovered cross-repository links.
     Registry,
+}
+
+/// Reproducible experiment actions.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ExperimentAction {
+    /// Evaluate a labeled corpus with the deterministic fallback provider.
+    Accuracy { corpus: String },
 }
 
 impl Default for Cli {
@@ -321,6 +330,20 @@ fn parse_command(name: &str, raw: &mut Args) -> Result<Command, CliError> {
             capture: require_arg(raw, "workload", "<capture.jsonl>")?,
             duration_seconds: None,
         },
+        "experiment" => {
+            let action = match raw.next().as_deref() {
+                Some("accuracy") => ExperimentAction::Accuracy {
+                    corpus: require_arg(raw, "experiment accuracy", "<corpus.json>")?,
+                },
+                None => return Err(CliError::usage("`experiment` requires accuracy")),
+                Some(other) => {
+                    return Err(CliError::usage(format!(
+                        "unknown experiment action `{other}` (accuracy)"
+                    )));
+                }
+            };
+            Command::Experiment { action }
+        }
         "cache" => match raw.next().as_deref() {
             None | Some("status") => Command::Cache {
                 action: CacheAction::Status,
@@ -454,6 +477,23 @@ mod tests {
         assert_eq!(parse_level("5").expect("num"), 5);
         assert!(parse_level("9").is_err());
         assert!(parse_level("nope").is_err());
+    }
+
+    #[test]
+    fn parses_experiment_accuracy() {
+        let cli = parse_str(&["experiment", "accuracy", "corpus.json"]).expect("ok");
+        assert_eq!(
+            cli.command,
+            Command::Experiment {
+                action: ExperimentAction::Accuracy {
+                    corpus: "corpus.json".to_string(),
+                },
+            }
+        );
+        let error = parse_str(&["experiment", "accuracy"]).expect_err("usage");
+        assert_eq!(error.code(), crate::error::ExitCode::Usage);
+        let error = parse_str(&["experiment", "quality"]).expect_err("usage");
+        assert!(error.to_string().contains("unknown experiment action"));
     }
 
     #[test]

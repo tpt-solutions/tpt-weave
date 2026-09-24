@@ -213,6 +213,7 @@ remote data transfer.
 | `tpt-weave cache status` | Inspect cache entries and hit rate |
 | `tpt-weave cache clear` | Remove filesystem cache entries |
 | `tpt-weave workload <capture.jsonl>` | Aggregate a Phase 18 JSONL capture; add `--duration` for rates |
+| `tpt-weave experiment accuracy <corpus.json>` | Evaluate a labeled corpus with the deterministic provider |
 
 Representation levels are `0` metadata, `1` symbols, `2` signatures, `3`
 skeleton, `4` targeted implementation, and `5` full source.

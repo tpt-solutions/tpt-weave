@@ -11,6 +11,7 @@ use std::path::Path;
 use std::time::Instant;
 use tpt_weave_context::{ContextError, Selection, SourceProvider, estimate_tokens, represent_file};
 use tpt_weave_core::ContextLevel;
+use tpt_weave_decisions::{DecisionCategory, DecisionProvider, DecisionRequest};
 use tpt_weave_graph::RepositoryGraph;
 use tpt_weave_tools::{ToolKind, ToolOutput, reduce};
 
@@ -226,6 +227,168 @@ impl From<serde_json::Error> for ExperimentReportError {
     fn from(error: serde_json::Error) -> Self {
         Self::Json(error)
     }
+}
+
+/// One labeled decision used by a local or external accuracy corpus.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LabeledDecision {
+    pub category: DecisionCategory,
+    pub subject: String,
+    pub context: String,
+    /// The expected choice from [`DecisionCategory::choices`].
+    pub expected_choice: String,
+}
+
+impl LabeledDecision {
+    /// Creates a labeled decision case.
+    pub fn new(
+        category: DecisionCategory,
+        subject: impl Into<String>,
+        context: impl Into<String>,
+        expected_choice: impl Into<String>,
+    ) -> Self {
+        Self {
+            category,
+            subject: subject.into(),
+            context: context.into(),
+            expected_choice: expected_choice.into(),
+        }
+    }
+
+    fn request(&self) -> DecisionRequest {
+        self.category.ask(&self.subject, &self.context)
+    }
+}
+
+/// Current labeled-accuracy corpus schema.
+pub const ACCURACY_CORPUS_SCHEMA: u32 = 1;
+
+/// A reproducible, local-only labeled corpus for provider evaluation.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AccuracyCorpus {
+    pub schema: u32,
+    pub cases: Vec<LabeledDecision>,
+}
+
+impl AccuracyCorpus {
+    /// Creates a corpus with the current schema.
+    pub fn new(cases: Vec<LabeledDecision>) -> Self {
+        Self {
+            schema: ACCURACY_CORPUS_SCHEMA,
+            cases,
+        }
+    }
+
+    /// Parses and validates a JSON corpus.
+    pub fn from_json(text: &str) -> Result<Self, ExperimentReportError> {
+        let corpus: Self = serde_json::from_str(text).map_err(ExperimentReportError::Json)?;
+        corpus.validate()?;
+        Ok(corpus)
+    }
+
+    /// Validates schema, corpus size, and every expected choice.
+    pub fn validate(&self) -> Result<(), ExperimentReportError> {
+        if self.schema != ACCURACY_CORPUS_SCHEMA {
+            return Err(ExperimentReportError::Schema {
+                found: self.schema,
+                expected: ACCURACY_CORPUS_SCHEMA,
+            });
+        }
+        if self.cases.is_empty() {
+            return Err(ExperimentReportError::Invalid(
+                "accuracy corpus must contain at least one case".to_string(),
+            ));
+        }
+        for case in &self.cases {
+            if !case
+                .category
+                .choices()
+                .iter()
+                .any(|choice| *choice == case.expected_choice)
+            {
+                return Err(ExperimentReportError::Invalid(format!(
+                    "expected choice `{}` is not valid for `{}`",
+                    case.expected_choice, case.category
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Pretty JSON representation.
+    pub fn to_json(&self) -> String {
+        serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    /// Writes the validated corpus as pretty JSON.
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), ExperimentReportError> {
+        self.validate()?;
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(ExperimentReportError::Io)?;
+        }
+        fs::write(path, self.to_json()).map_err(ExperimentReportError::Io)
+    }
+
+    /// Loads and validates a corpus from `path`.
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, ExperimentReportError> {
+        Self::from_json(&fs::read_to_string(path).map_err(ExperimentReportError::Io)?)
+    }
+}
+
+/// Accuracy results for one provider/corpus pair.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AccuracyReport {
+    pub schema: u32,
+    pub provider: String,
+    pub total: u64,
+    pub correct: u64,
+    pub incorrect: u64,
+    pub errors: u64,
+    pub accuracy: f64,
+}
+
+/// Evaluates a provider against labeled decisions without changing the
+/// provider or policy implementation.
+pub fn evaluate_accuracy(
+    provider: &dyn DecisionProvider,
+    cases: &[LabeledDecision],
+) -> Result<AccuracyReport, ExperimentReportError> {
+    if cases.is_empty() {
+        return Err(ExperimentReportError::Invalid(
+            "accuracy corpus must contain at least one case".to_string(),
+        ));
+    }
+    let mut correct = 0u64;
+    let mut errors = 0u64;
+    for case in cases {
+        let request = case.request();
+        if !request
+            .choices
+            .iter()
+            .any(|choice| choice == &case.expected_choice)
+        {
+            return Err(ExperimentReportError::Invalid(format!(
+                "expected choice `{}` is not valid for `{}`",
+                case.expected_choice, case.category
+            )));
+        }
+        match provider.decide(&request) {
+            Ok(outcome) if outcome.decision.choice == case.expected_choice => correct += 1,
+            Ok(_) => {}
+            Err(_) => errors += 1,
+        }
+    }
+    let total = cases.len() as u64;
+    Ok(AccuracyReport {
+        schema: EXPERIMENT_REPORT_SCHEMA,
+        provider: provider.name().to_string(),
+        total,
+        correct,
+        incorrect: total - correct - errors,
+        errors,
+        accuracy: correct as f64 / total as f64,
+    })
 }
 
 /// Records all six hierarchical representation levels for one source file.

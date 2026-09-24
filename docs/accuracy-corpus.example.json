@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "category": "relevance",
+      "subject": "src/parser.rs",
+      "context": "fix the parser regression",
+      "expected_choice": "relevant"
+    },
+    {
+      "category": "relevance",
+      "subject": "docs/style.md",
+      "context": "fix the parser regression",
+      "expected_choice": "irrelevant"
+    },
+    {
+      "category": "expansion",
+      "subject": "src/parser.rs",
+      "context": "inspect the parser behavior",
+      "expected_choice": "keep"
+    },
+    {
+      "category": "retrieval_depth",
+      "subject": "src/parser.rs",
+      "context": "inspect the parser behavior",
+      "expected_choice": "skeleton"
+    }
+  ]
+}

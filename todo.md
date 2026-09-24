@@ -479,7 +479,7 @@ and production MCP/cache captures remain explicit data-collection work.
 
 - [x] Compare deterministic-only.
 - [x] Compare deterministic + JEv.
-- [ ] Measure accuracy.
+- [x] Measure accuracy (local labeled corpus workflow; live JEv quality remains open).
 - [x] Measure token savings.
 
 ### Experiment B — Hierarchical source
@@ -520,12 +520,12 @@ workload has been captured yet, so those checkboxes remain open.
 This is a high-priority real-world benchmark.
 
 - [ ] Record a representative coding session.
-- [ ] Capture baseline token volume.
-- [ ] Identify repeated context.
-- [ ] Identify repeated tool output.
-- [ ] Identify repository exploration overhead.
+- [x] Capture baseline token volume (local smoke capture only; not representative).
+- [x] Identify repeated context (local smoke capture only).
+- [x] Identify repeated tool output (local smoke capture only).
+- [x] Identify repository exploration overhead (local smoke capture only).
 - [ ] Identify unnecessary dependency traversal.
-- [ ] Run deterministic tpt-weave.
+- [x] Run deterministic tpt-weave (local smoke capture only).
 - [ ] Add JEv.
 - [x] Measure total token reduction.
 - [ ] Measure model quality.
@@ -535,11 +535,10 @@ This is a high-priority real-world benchmark.
 `WorkloadCapture`/`WorkloadReport` provide the executable capture format and the
 `tpt-weave workload` aggregation command for this study (JSONL events, token
 accounting, repetition/exploration/dependency counters, latency, success rate,
-cost deltas, and tokens/hour). The repository-local security and performance
-reviews are recorded in `docs/security-review.md` and
-`docs/performance-review.md`. A real session capture, live JEv run, and final
-model-quality/dollar-savings conclusions remain open; the harness does not
-invent them.
+cost deltas, and tokens/hour). A local deterministic smoke capture has exercised
+these paths, but it is explicitly not the representative 1B-token session. A
+representative session capture, live JEv run, and final model-quality/dollar-
+savings conclusions remain open; the harness does not invent them.
 
 **Target:**
 

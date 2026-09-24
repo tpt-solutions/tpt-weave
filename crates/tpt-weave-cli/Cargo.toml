@@ -22,6 +22,7 @@ tpt-weave-graph.workspace = true
 tpt-weave-context.workspace = true
 tpt-weave-tools.workspace = true
 tpt-weave-cache.workspace = true
+tpt-weave-decisions.workspace = true
 tpt-weave-eval.workspace = true
 
 [lib]

@@ -39,7 +39,7 @@ function Invoke-MetadataCommand([string[]]$CommandArgs) {
   $exitCode = $LASTEXITCODE
   $watch.Stop()
   if ($exitCode -ne 0) {
-    throw "tpt-weave $($CommandArgs -join ' ') failed with exit $exitCode: $($output -join [Environment]::NewLine)"
+    throw "tpt-weave $($CommandArgs -join ' ') failed with exit ${exitCode}: $($output -join [Environment]::NewLine)"
   }
   $json = ($output -join [Environment]::NewLine) | ConvertFrom-Json
   [pscustomobject]@{ Data = $json; ElapsedMs = [uint64][math]::Round($watch.Elapsed.TotalMilliseconds) }

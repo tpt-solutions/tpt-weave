@@ -238,6 +238,33 @@ fn doctor_after_adopt_passes() {
 }
 
 #[test]
+fn experiment_accuracy_reports_deterministic_provider_results() {
+    let dir = fixture();
+    let corpus = r#"{
+      "schema": 1,
+      "cases": [
+        {"category":"relevance","subject":"src/lib.rs","context":"fix the bug","expected_choice":"relevant"},
+        {"category":"relevance","subject":"docs/readme.md","context":"fix the bug","expected_choice":"irrelevant"}
+      ]
+    }"#;
+    fs::write(dir.join("corpus.json"), corpus).expect("write corpus");
+
+    let (code, human, stderr) = cli(&dir, &["experiment", "accuracy", "corpus.json"]);
+    assert_eq!(code, 0, "{stderr}");
+    assert!(human.contains("provider: deterministic"), "{human}");
+    assert!(human.contains("cases: 2"), "{human}");
+
+    let (code, json, stderr) = cli(&dir, &["--json", "experiment", "accuracy", "corpus.json"]);
+    assert_eq!(code, 0, "{stderr}");
+    let value: serde_json::Value = serde_json::from_str(json.trim()).expect("accuracy json");
+    assert_eq!(value["provider"], "deterministic");
+    assert_eq!(value["total"], 2);
+    assert!(value["correct"].as_u64().is_some());
+    assert!(value["incorrect"].as_u64().is_some());
+    assert!(value["accuracy"].as_f64().is_some());
+}
+
+#[test]
 fn workload_aggregates_jsonl_capture_with_duration() {
     let dir = fixture();
     let capture = r#"{"kind":"context","id":"overview","raw_tokens":100,"delivered_tokens":20}
