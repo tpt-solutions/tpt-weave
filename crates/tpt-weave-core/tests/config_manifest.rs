@@ -1,7 +1,9 @@
 //! Manifest load/save/validate and privacy exclusion behaviour.
 
 use std::path::PathBuf;
-use tpt_weave_core::{ConfigError, Manifest, SCHEMA_VERSION, manifest_path};
+use tpt_weave_core::{
+    ConfigError, Manifest, SCHEMA_VERSION, discover_repository_root, manifest_path,
+};
 
 fn temp_manifest_path(tag: &str) -> PathBuf {
     let nanos = std::time::SystemTime::now()
@@ -11,6 +13,19 @@ fn temp_manifest_path(tag: &str) -> PathBuf {
     std::env::temp_dir()
         .join(format!("tpt-weave-{}-{tag}-{nanos}", std::process::id()))
         .join("manifest.toml")
+}
+
+#[test]
+fn standard_artifact_paths_live_under_tpt_weave() {
+    let root = std::path::Path::new("repo");
+    assert_eq!(
+        tpt_weave_core::integration::standard_path(root, tpt_weave_core::integration::GRAPH_FILE),
+        root.join(".tpt-weave/graph.json")
+    );
+    assert_eq!(
+        tpt_weave_core::integration::standard_path(root, tpt_weave_core::integration::CACHE_DIR),
+        root.join(".tpt-weave/cache")
+    );
 }
 
 #[test]
@@ -96,6 +111,34 @@ fn privacy_exclusions_match_supported_pattern_forms() {
     assert!(!privacy.is_excluded("src/main.rs"));
     assert!(!privacy.is_excluded("docs/README.md"));
     assert!(!privacy.is_excluded("Cargo.toml"));
+}
+
+#[test]
+fn discovers_nested_manifest_then_git_or_cargo_root() {
+    let root = std::env::temp_dir().join(format!(
+        "tpt-weave-discover-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let nested = root.join("src/inner");
+    std::fs::create_dir_all(&nested).unwrap();
+    std::fs::write(
+        root.join("Cargo.toml"),
+        "[package]\nname='fixture'\nversion='0.1.0'\nedition='2024'\n",
+    )
+    .unwrap();
+    std::fs::create_dir_all(root.join(".git")).unwrap();
+    std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
+    let manifest = root.join(".tpt-weave/manifest.toml");
+    std::fs::create_dir_all(manifest.parent().unwrap()).unwrap();
+    std::fs::write(&manifest, "schema = 1\nrepository = 'fixture'\n").unwrap();
+
+    let found = discover_repository_root(&nested).expect("root");
+    assert_eq!(found, std::fs::canonicalize(&root).unwrap());
+    let _ = std::fs::remove_dir_all(root);
 }
 
 #[test]

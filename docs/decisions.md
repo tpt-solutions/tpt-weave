@@ -45,6 +45,8 @@ tpt-weave context "<task>"          # build task context within the configured b
 tpt-weave diff                      # reduced working-tree diff
 tpt-weave stats                     # token accounting + cache statistics
 tpt-weave cache [status|clear]      # cache management (default: status)
+tpt-weave integration agent|mcp|registry  # standard adapter/registry metadata
+tpt-weave workload <capture.jsonl> [--duration <seconds>]  # aggregate Phase 18 workload events
 ```
 
 - `adopt` is sugar for `init` + `.gitignore` entries + `index --full` + cross-repository

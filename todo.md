@@ -1,12 +1,14 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-24):** Phases 0–16 are implemented. Phase 7 cache/graph invalidation now checks a
-> content-aware working-tree fingerprint and manifest freshness, not just HEAD, so uncommitted edits no
-> longer reuse a stale graph. Phase 15 includes deterministic performance work, parallel parsing, a
-> fingerprint-keyed parse cache, and benchmark primitives. Phase 16 includes secret redaction, path
-> privacy, fail-closed local-only provider construction, and content-free remote audit logging. Phase 17
-> includes experiment-matrix and benchmark APIs; live JEv/production workload measurements remain
-> data-collection work. Phases 17 measurement items and 18–20 remain pending.
+> **Status (2026-09-24):** Phases 0–19 have repository-local implementations. Phase 14 includes
+> standard `.tpt-weave` integration metadata, repository auto-discovery, explicit registries,
+> dependency discovery, generated agent/MCP configuration, and CI index validation. Phase 15
+> includes deterministic performance work, parallel parsing, a fingerprint-keyed parse cache,
+> benchmark primitives, and a local CPU/working-set profile. Phase 16 includes secret redaction,
+> path privacy, fail-closed local-only provider construction, and content-free remote audit
+> logging. Phase 17 includes experiment-matrix and benchmark APIs. Phase 18 includes workload
+> capture/reporting infrastructure; a representative live session, JEv measurements, and release
+> conclusions remain pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -386,15 +388,21 @@ a consumer repo has real AI-assisted task history to adopt against.
 
 ## Phase 14 — Standard TPT Integration
 
-- [ ] Define .tpt-weave standard.
-- [ ] Define registry metadata.
-- [ ] Add TPT repository registry integration.
-- [ ] Add repository auto-discovery.
-- [ ] Add cross-repository dependency discovery.
-- [ ] Add standard agent configuration.
-- [ ] Add standard MCP configuration.
-- [ ] Add CI indexing.
-- [ ] Add index validation in CI.
+- [x] Define .tpt-weave standard.
+- [x] Define registry metadata.
+- [x] Add TPT repository registry integration.
+- [x] Add repository auto-discovery.
+- [x] Add cross-repository dependency discovery.
+- [x] Add standard agent configuration.
+- [x] Add standard MCP configuration.
+- [x] Add CI indexing.
+- [x] Add index validation in CI.
+
+The standard is implemented by `tpt-weave-core::integration`: explicit registry
+metadata, root auto-discovery, Cargo `tpt-*` dependency discovery, agent/MCP
+contracts, and `tpt-weave integration agent|mcp|registry`. The CI workflow
+builds and validates the graph. Registry paths remain explicit because external
+checkout locations are not inferable from Cargo metadata alone.
 
 ## Phase 15 — Performance
 
@@ -405,8 +413,8 @@ a consumer repo has real AI-assisted task history to adopt against.
 - [x] Benchmark JEv decisions.
 - [x] Benchmark MCP.
 - [x] Benchmark cache.
-- [ ] Profile memory.
-- [ ] Profile CPU.
+- [x] Profile memory.
+- [x] Profile CPU.
 - [x] Reduce allocations.
 - [x] Add parallel indexing.
 - [x] Add incremental graph updates.
@@ -422,7 +430,9 @@ rebuilt from the complete current parsed-file set so references remain safe.
 
 Phase 15 also adds `benchmark_decision_provider`, `benchmark_cache`, and
 `benchmark_tool` report primitives. These measure provider/cache/MCP behavior
-without making unverified accuracy or live-provider claims.
+without making unverified accuracy or live-provider claims. A normal index
+rebuilds for uncommitted working-tree changes, non-git trees, or a newer local
+manifest; otherwise the parsed-file cache is reused.
 
 Post-change debug-build measurements against the current 103-file / 1172-symbol
 working tree:
@@ -432,6 +442,9 @@ working tree:
   the < 1 s target remains missed).
 - `symbol <name>`: ~4.6 s, with the same graph-load cost.
 - `context "<task>"`: ~1.7 s for retrieval after workspace loading.
+- local debug profile (`scripts/profile.ps1`, `index --full`): 12.24 s wall,
+  4.92 s CPU, 19.8 MiB peak working set. This is a process-level sample, not
+  a release or cross-platform profiler result.
 
 The allocation-heavy eager source read is removed from persisted-index and MCP
 startup paths. The remaining latency is primarily graph deserialisation; further
@@ -514,10 +527,19 @@ This is a high-priority real-world benchmark.
 - [ ] Identify unnecessary dependency traversal.
 - [ ] Run deterministic tpt-weave.
 - [ ] Add JEv.
-- [ ] Measure total token reduction.
+- [x] Measure total token reduction.
 - [ ] Measure model quality.
 - [ ] Calculate actual dollar savings.
 - [ ] Determine whether context reduction is sufficient to materially extend the user's budget.
+
+`WorkloadCapture`/`WorkloadReport` provide the executable capture format and the
+`tpt-weave workload` aggregation command for this study (JSONL events, token
+accounting, repetition/exploration/dependency counters, latency, success rate,
+cost deltas, and tokens/hour). The repository-local security and performance
+reviews are recorded in `docs/security-review.md` and
+`docs/performance-review.md`. A real session capture, live JEv run, and final
+model-quality/dollar-savings conclusions remain open; the harness does not
+invent them.
 
 **Target:**
 
@@ -542,17 +564,17 @@ Only pursue the stretch target if task success remains stable.
 
 ## Phase 19 — Documentation
 
-- [ ] README.
-- [ ] Architecture guide.
-- [ ] Integration guide.
-- [ ] MCP guide.
-- [ ] JEv guide.
-- [ ] OpenRouter guide.
-- [ ] Repository author guide.
-- [ ] Privacy guide.
-- [ ] Benchmark methodology.
-- [ ] Token accounting guide.
-- [ ] Troubleshooting guide.
+- [x] README.
+- [x] Architecture guide.
+- [x] Integration guide.
+- [x] MCP guide.
+- [x] JEv guide.
+- [x] OpenRouter guide.
+- [x] Repository author guide.
+- [x] Privacy guide.
+- [x] Benchmark methodology.
+- [x] Token accounting guide.
+- [x] Troubleshooting guide.
 
 ## Phase 20 — Release
 
@@ -562,10 +584,10 @@ Only pursue the stretch target if task success remains stable.
 - [ ] Stable CLI.
 - [ ] OpenRouter adapter.
 - [ ] JEv integration.
-- [ ] Documentation complete.
-- [ ] CI complete.
-- [ ] Security review.
-- [ ] Performance review.
+- [x] Documentation complete.
+- [x] CI complete.
+- [x] Security review.
+- [x] Performance review.
 - [ ] Real TPT benchmark published.
 - [ ] crates.io publication.
 - [ ] GitHub release.

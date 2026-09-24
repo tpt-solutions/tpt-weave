@@ -5,6 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "Deterministic cargo and git repository indexing for tpt-weave"
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false

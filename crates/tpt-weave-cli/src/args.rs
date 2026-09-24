@@ -61,6 +61,16 @@ pub enum Command {
     Stats,
     /// Cache management (default status).
     Cache { action: CacheAction },
+    /// Emit or persist standard agent/MCP integration metadata.
+    Integration {
+        action: IntegrationAction,
+        write: bool,
+    },
+    /// Aggregate a Phase 18 JSONL workload capture.
+    Workload {
+        capture: String,
+        duration_seconds: Option<String>,
+    },
     /// Print usage and exit 0.
     Help,
     /// Print version and exit 0.
@@ -75,6 +85,17 @@ pub enum CacheAction {
     Status,
     /// Remove every cache entry.
     Clear,
+}
+
+/// Standard integration metadata action.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IntegrationAction {
+    /// Agent environment contract.
+    Agent,
+    /// MCP client configuration.
+    Mcp,
+    /// Registry status and discovered cross-repository links.
+    Registry,
 }
 
 impl Default for Cli {
@@ -170,6 +191,27 @@ fn apply_flag(
             Some(Command::Init { force }) => *force = true,
             _ => return Err(CliError::usage("`--force` is only valid with `init`")),
         },
+        "--write" => match command {
+            Some(Command::Integration { write, .. }) => *write = true,
+            _ => {
+                return Err(CliError::usage(
+                    "`--write` is only valid with `integration agent|mcp`",
+                ));
+            }
+        },
+        "--duration" => {
+            let value = raw.next_value("--duration")?;
+            match command {
+                Some(Command::Workload {
+                    duration_seconds, ..
+                }) => *duration_seconds = Some(value),
+                _ => {
+                    return Err(CliError::usage(
+                        "`--duration` is only valid with `workload`",
+                    ));
+                }
+            }
+        }
         "--full" => match command {
             Some(Command::Index { full }) => *full = true,
             _ => return Err(CliError::usage("`--full` is only valid with `index`")),
@@ -256,6 +298,29 @@ fn parse_command(name: &str, raw: &mut Args) -> Result<Command, CliError> {
         },
         "diff" => Command::Diff,
         "stats" => Command::Stats,
+        "integration" => {
+            let action = match raw.next().as_deref() {
+                Some("agent") => IntegrationAction::Agent,
+                Some("mcp") => IntegrationAction::Mcp,
+                Some("registry") => IntegrationAction::Registry,
+                None => {
+                    return Err(CliError::usage("`integration` requires agent|mcp|registry"));
+                }
+                Some(other) => {
+                    return Err(CliError::usage(format!(
+                        "unknown integration action `{other}` (agent|mcp|registry)"
+                    )));
+                }
+            };
+            Command::Integration {
+                action,
+                write: false,
+            }
+        }
+        "workload" => Command::Workload {
+            capture: require_arg(raw, "workload", "<capture.jsonl>")?,
+            duration_seconds: None,
+        },
         "cache" => match raw.next().as_deref() {
             None | Some("status") => Command::Cache {
                 action: CacheAction::Status,
@@ -407,6 +472,38 @@ mod tests {
                 action: CacheAction::Clear
             }
         ));
+    }
+
+    #[test]
+    fn parses_integration_actions_and_write_flag() {
+        let agent = parse_str(&["integration", "agent", "--write"]).expect("agent");
+        assert!(matches!(
+            agent.command,
+            Command::Integration {
+                action: IntegrationAction::Agent,
+                write: true
+            }
+        ));
+        let mcp = parse_str(&["integration", "mcp"]).expect("mcp");
+        assert!(matches!(
+            mcp.command,
+            Command::Integration {
+                action: IntegrationAction::Mcp,
+                write: false
+            }
+        ));
+        let registry = parse_str(&["integration", "registry"]).expect("registry");
+        assert!(matches!(
+            registry.command,
+            Command::Integration {
+                action: IntegrationAction::Registry,
+                write: false
+            }
+        ));
+        assert_eq!(
+            parse_str(&["integration"]).unwrap_err().code(),
+            crate::error::ExitCode::Usage
+        );
     }
 
     #[test]

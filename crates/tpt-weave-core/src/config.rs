@@ -20,6 +20,35 @@ pub fn manifest_path(repo_root: &Path) -> PathBuf {
     repo_root.join(MANIFEST_DIR).join(MANIFEST_FILE)
 }
 
+/// Finds the nearest working-tree root for a repository-aware command.
+///
+/// Search order is: an existing tpt-weave manifest, a Git root, then the
+/// nearest Cargo workspace. A new repository with no marker is returned
+/// unchanged, so `init` can still create its first manifest in place.
+pub fn discover_repository_root(start: impl AsRef<Path>) -> Result<PathBuf, ConfigError> {
+    let start = start.as_ref();
+    let current = std::fs::canonicalize(start)?;
+    let mut candidate = current.as_path();
+    let mut git_candidate = None;
+    let mut cargo_candidate = None;
+    loop {
+        if manifest_path(candidate).is_file() {
+            return Ok(candidate.to_path_buf());
+        }
+        if git_candidate.is_none() && candidate.join(".git").exists() {
+            git_candidate = Some(candidate.to_path_buf());
+        }
+        if cargo_candidate.is_none() && candidate.join("Cargo.toml").is_file() {
+            cargo_candidate = Some(candidate.to_path_buf());
+        }
+        let Some(parent) = candidate.parent() else {
+            break;
+        };
+        candidate = parent;
+    }
+    Ok(git_candidate.or(cargo_candidate).unwrap_or(current))
+}
+
 /// Errors produced while loading, validating or saving a [`Manifest`].
 #[derive(Debug)]
 pub enum ConfigError {

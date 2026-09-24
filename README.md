@@ -7,9 +7,10 @@ workspaces deterministically, builds hierarchical source representations, and de
 coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
 information required to complete the task correctly.
 
-> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–16 are implemented,
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–17 are implemented,
 > with Phase 15 performance work, Phase 16 privacy/security controls, and Phase 17 experiment/benchmark
-> APIs. Live JEv/production workload measurements and Phases 18–20 remain pending.
+> APIs. Phase 18 workload capture/reporting infrastructure is implemented; live JEv/production workload
+> measurements and Phases 18–20 conclusions remain pending.
 
 ## Core principle
 
@@ -36,7 +37,7 @@ Start as one repository with a workspace (spec §25):
 | `crates/tpt-weave-openrouter` | Phase 8 done | OpenRouter Decisions API (JEv) blocking client: retries, timeouts, usage/confidence |
 | `crates/tpt-weave-mcp` | Phase 9 done | MCP server (stdio): 11 tools, dynamic tool filter, compact schemas |
 | `crates/tpt-weave-cli` | Phase 10 done | `tpt-weave` binary: adopt/init/index/doctor/overview/symbol/refs/expand/context/diff/stats/cache |
-| `crates/tpt-weave-eval` | Phase 11 done | Eval harness: baseline/weave captures, net token reduction, local adopt benchmark (spec §23) |
+| `crates/tpt-weave-eval` | Phases 11/15/17/18 infra | Eval harness, benchmark primitives, experiment matrices, workload capture/reporting (spec §23) |
 
 ## Quick start
 
@@ -68,8 +69,22 @@ tpt-weave adopt
 - [todo.md](todo.md) — phased implementation plan
 - [docs/decisions.md](docs/decisions.md) — architecture decisions: MSRV, Rust editions, initial CLI UX,
   schema versioning, privacy/redaction policy, stable vs experimental APIs
+- [docs/using-tpt-weave.md](docs/using-tpt-weave.md) — practical setup and daily-use guide for new and existing repositories
+- [docs/architecture.md](docs/architecture.md) — crate/data-flow architecture
+- [docs/integration.md](docs/integration.md) — standard repository and adapter integration
+- [docs/mcp.md](docs/mcp.md) — MCP server and client configuration
+- [docs/jev.md](docs/jev.md) — JEv decision policy and failure semantics
+- [docs/openrouter.md](docs/openrouter.md) — OpenRouter adapter configuration
+- [docs/repository-author-guide.md](docs/repository-author-guide.md) — repository author workflow
+- [docs/token-accounting.md](docs/token-accounting.md) — token accounting methodology
+- [docs/troubleshooting.md](docs/troubleshooting.md) — common failures and remedies
 - [docs/privacy.md](docs/privacy.md) — privacy policy, redaction, and threat model
+- [docs/benchmark-methodology.md](docs/benchmark-methodology.md) — benchmark and workload measurement methodology
+- [docs/security-review.md](docs/security-review.md) — repository-local security/privacy review
+- [docs/performance-review.md](docs/performance-review.md) — measured performance review and bottlenecks
+- [docs/release-readiness.md](docs/release-readiness.md) — local release gates, publication order, and external blockers
 - [docs/experiments.md](docs/experiments.md) — performance benchmarks and Phase 17 experiment matrices
+- [docs/workload.md](docs/workload.md) — Phase 18 workload capture and report format
 
 ## Toolchain
 

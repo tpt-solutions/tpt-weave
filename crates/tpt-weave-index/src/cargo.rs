@@ -300,6 +300,25 @@ impl CargoIndex {
         self.packages.iter().filter(|pkg| pkg.is_workspace_member)
     }
 
+    /// Sorted `(package, repository)` pairs for `tpt-*` dependencies outside
+    /// this workspace.
+    pub fn discover_tpt_dependencies(&self) -> Vec<(String, String)> {
+        let members: std::collections::BTreeSet<&str> =
+            self.workspace_members.iter().map(String::as_str).collect();
+        let mut links: std::collections::BTreeSet<(String, String)> =
+            std::collections::BTreeSet::new();
+        for package in self.workspace_packages() {
+            for dependency in &package.dependencies {
+                if dependency.name.starts_with("tpt-")
+                    && !members.contains(dependency.name.as_str())
+                {
+                    links.insert((dependency.name.clone(), dependency.name.clone()));
+                }
+            }
+        }
+        links.into_iter().collect()
+    }
+
     /// Every optional (`optional = true`) dependency with its package
     /// (todo.md Phase 2: "Detect optional dependencies").
     pub fn optional_dependencies(&self) -> impl Iterator<Item = (&PackageIndex, &DependencyIndex)> {

@@ -9,11 +9,13 @@ mod expand;
 mod help;
 mod index;
 mod init;
+mod integration;
 mod overview;
 mod refs;
 mod skeleton;
 mod stats;
 mod symbol;
+mod workload;
 
 use crate::args::{Cli, Command};
 use crate::error::CliError;
@@ -76,5 +78,10 @@ pub fn dispatch(cli: &Cli) -> Result<Rendered, CliError> {
         Command::Diff => diff::run(cli),
         Command::Stats => stats::run(cli),
         Command::Cache { action } => cache::run(cli, *action),
+        Command::Integration { action, write } => integration::run(cli, *action, *write),
+        Command::Workload {
+            capture,
+            duration_seconds,
+        } => workload::run(cli, capture, duration_seconds.as_deref()),
     }
 }

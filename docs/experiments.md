@@ -14,8 +14,14 @@ variant into a claimed result.
 - `hierarchy_measurements_with_selection` permits an explicitly measured level-4 selection.
 - `tpt_weave_eval::tool_output_measurements` records raw, deterministic, and
   optional JEv-augmented tool-output variants.
-- `VariantMeasurement` and `ExperimentSuite` carry accuracy, JEv overhead,
-  latency, and arbitrary measurement metadata for experiments A, D, and E.
+- `cache_measurements` and `cross_repository_measurements` require all four
+  measured variants explicitly; they do not synthesize JEv or cache hits.
+- `VariantMeasurement::with_accuracy` records an externally measured result
+  without implying a quality claim.
+- `tpt_weave_eval::VariantMeasurement` and `ExperimentSuite` carry accuracy,
+  JEv overhead, latency, and arbitrary measurement metadata for experiments A,
+  D, and E. `ExperimentSuite::save`/`load` and `from_json` validate the report
+  schema, unique variant names, and supplied accuracy ranges.
 
 ## Experiment matrix
 
@@ -38,11 +44,18 @@ repeatable local cache baseline.
 
 ## Local commands
 
-Use the debug binary for comparable local measurements. The CLI already emits
+Use the debug binary for comparable local measurements. The CLI emits
 `elapsed_ms` for `index`, `symbol`, and `context`; rebuilt indexes also expose
-`parse_cache` hit/miss/store counters. Run the command several times and record
-the machine, revision, build profile, and sample count with the report.
+`parse_cache` hit/miss/store counters. A normal `index` reuses a graph only when
+HEAD, the working tree, and the local manifest are unchanged; uncommitted edits
+and privacy-configuration changes enter the incremental rebuild path. Run the
+command several times and record the machine, revision, build profile, and sample
+count with the report.
 
 The current workspace does not contain a live JEv corpus, a production MCP
 workload capture, or a platform-independent memory profiler. Those measurements
 remain data-collection work; the report types make the missing inputs explicit.
+`ExperimentSuite::from_json`, `load`, and `save` validate report schema, unique
+variant names, and supplied accuracy ranges before evidence is reused.
+See [workload.md](workload.md) for the Phase 18 capture format and
+[release-readiness.md](release-readiness.md) for the local/external gate split.

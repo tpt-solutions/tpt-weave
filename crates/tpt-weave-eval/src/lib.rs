@@ -20,6 +20,7 @@ pub mod experiments;
 pub mod harness;
 pub mod metrics;
 pub mod report;
+pub mod workload;
 
 pub use bench::{
     BENCHMARK_REPORT_SCHEMA, BenchmarkReport, BenchmarkSample, benchmark_cache,
@@ -27,8 +28,8 @@ pub use bench::{
 };
 pub use capture::{BaselineCapture, WeaveCapture};
 pub use experiments::{
-    EXPERIMENT_REPORT_SCHEMA, ExperimentSuite, VariantMeasurement, cache_measurements,
-    comparison_suite, cross_repository_measurements, hierarchy_measurements,
+    EXPERIMENT_REPORT_SCHEMA, ExperimentReportError, ExperimentSuite, VariantMeasurement,
+    cache_measurements, comparison_suite, cross_repository_measurements, hierarchy_measurements,
     hierarchy_measurements_with_selection, jev_relevance_measurements, reduction_tokens,
     tool_output_measurements,
 };
@@ -38,3 +39,7 @@ pub use harness::{
 };
 pub use metrics::{AggregateMetrics, MetricsError, TaskMetrics, estimate_text_tokens};
 pub use report::{EVAL_REPORT_SCHEMA, EvalReport, EvalReportError, TaskEvaluation};
+pub use workload::{
+    WORKLOAD_REPORT_SCHEMA, WorkloadCapture, WorkloadError, WorkloadEvent, WorkloadEventKind,
+    WorkloadReport,
+};

@@ -90,7 +90,44 @@ fn externally_measured_variants_round_trip_as_json() {
         ],
     );
     let json = suite.to_json();
-    let back: ExperimentSuite = serde_json::from_str(&json).unwrap();
+    let back = ExperimentSuite::from_json(&json).unwrap();
     assert_eq!(suite, back);
     assert!(suite.summary().contains("2 variants"));
+}
+
+#[test]
+fn experiment_reports_reject_bad_schema_duplicates_and_accuracy() {
+    let mut suite = comparison_suite(
+        "jev_relevance",
+        [VariantMeasurement::new("deterministic_only", 100, 40, 1)],
+    );
+    let path = std::env::temp_dir().join(format!(
+        "tpt-weave-experiment-report-{}-{}.json",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    suite.save(&path).expect("save");
+    assert_eq!(ExperimentSuite::load(&path).expect("load"), suite);
+    std::fs::remove_file(path).ok();
+
+    suite.schema = 999;
+    assert!(matches!(
+        suite.validate(),
+        Err(tpt_weave_eval::ExperimentReportError::Schema { found: 999, .. })
+    ));
+    suite.schema = 1;
+    suite.cases.push(suite.cases[0].clone());
+    assert!(matches!(
+        suite.validate(),
+        Err(tpt_weave_eval::ExperimentReportError::Invalid(detail)) if detail.contains("duplicate")
+    ));
+    suite.cases.pop();
+    suite.cases[0].accuracy = Some(1.5);
+    assert!(matches!(
+        suite.validate(),
+        Err(tpt_weave_eval::ExperimentReportError::Invalid(detail)) if detail.contains("accuracy")
+    ));
 }

@@ -163,7 +163,7 @@ fn sensitive_assignment(line: &str) -> Option<(usize, String)> {
     ]
     .iter()
     .any(|marker| key.contains(marker));
-    sensitive.then(|| (delimiter, key))
+    sensitive.then_some((delimiter, key))
 }
 
 fn assignment_kind(key: &str) -> SecretKind {

@@ -126,6 +126,12 @@ impl From<tpt_weave_graph::GraphError> for CliError {
     }
 }
 
+impl From<tpt_weave_core::IntegrationError> for CliError {
+    fn from(error: tpt_weave_core::IntegrationError) -> Self {
+        Self::internal(error.to_string())
+    }
+}
+
 impl From<tpt_weave_cache::CacheError> for CliError {
     fn from(error: tpt_weave_cache::CacheError) -> Self {
         Self::internal(error.to_string())

@@ -6,7 +6,10 @@
 
 use std::path::{Path, PathBuf};
 use tpt_weave_context::{LazySources, SourceProvider};
-use tpt_weave_core::{Manifest, PrivacyConfig, Revision, hash::fnv1a64_hex, manifest_path};
+use tpt_weave_core::{
+    Manifest, PrivacyConfig, RepositoryRegistry, Revision, discover_repository_root,
+    hash::fnv1a64_hex, manifest_path,
+};
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph, graph_path};
 use tpt_weave_index::{CargoIndex, GitRepository};
 use tpt_weave_rust::{ParseCache, ParseFileInput};
@@ -49,16 +52,15 @@ pub struct Workspace {
     git: Option<GitRepository>,
     repository_name: String,
     worktree_state: String,
+    registry: Option<RepositoryRegistry>,
 }
 
 impl Workspace {
     /// Loads a working tree: cargo index, git revision, parsed sources,
     /// symbol graph.
     pub fn load(root: impl AsRef<Path>) -> Result<Self, WorkspaceError> {
-        let root = root
-            .as_ref()
-            .canonicalize()
-            .map_err(|e| WorkspaceError::Io(format!("{}: {e}", root.as_ref().display())))?;
+        let root = discover_repository_root(root)
+            .map_err(|e: tpt_weave_core::ConfigError| WorkspaceError::Io(e.to_string()))?;
         let repository_name = root
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
@@ -71,6 +73,8 @@ impl Workspace {
         } else {
             PrivacyConfig::default()
         };
+        let registry = RepositoryRegistry::load_standard(&root)
+            .map_err(|error| WorkspaceError::Index(error.to_string()))?;
 
         let git = GitRepository::discover(&root).ok();
         let revision = match &git {
@@ -81,11 +85,19 @@ impl Workspace {
         };
         let worktree_state = worktree_state(&root, git.as_ref())?;
         let cargo = CargoIndex::load(&root).map_err(|e| WorkspaceError::Index(e.to_string()))?;
-        let previous_graph = RepositoryGraph::load(&graph_path(&root)).ok();
+        let previous_graph = RepositoryGraph::load(graph_path(&root)).ok();
         let sources = LazySources::open_with_privacy(&root, &privacy)
             .map_err(|e| WorkspaceError::Io(e.to_string()))?;
 
         let mut builder = GraphBuilder::new(&repository_name, revision, cargo.clone());
+        for (package, repository) in cargo.discover_tpt_dependencies() {
+            let repository = registry
+                .as_ref()
+                .and_then(|registry| registry.get(&package))
+                .map(|entry| entry.name.clone())
+                .unwrap_or(repository);
+            builder = builder.link_cross_repository(package, repository);
+        }
         let repository_id = tpt_weave_core::RepositoryId::new(&repository_name);
         let mut parse_inputs = Vec::new();
         for package in cargo.workspace_packages() {
@@ -128,6 +140,7 @@ impl Workspace {
             git,
             repository_name,
             worktree_state,
+            registry,
         })
     }
 
@@ -144,6 +157,11 @@ impl Workspace {
     /// Lazily-read repository file sources.
     pub fn sources(&self) -> &dyn SourceProvider {
         &self.sources
+    }
+
+    /// Optional standard repository registry loaded from the working tree.
+    pub fn registry(&self) -> Option<&RepositoryRegistry> {
+        self.registry.as_ref()
     }
 
     /// Git handle, when the tree is a git repository.

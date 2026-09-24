@@ -24,6 +24,8 @@ Commands:
   diff                      reduced working-tree diff
   stats                     token accounting + cache statistics
   cache [status|clear]      cache management (default: status)
+  integration agent|mcp|registry  emit standard integration metadata (--write)
+  workload <capture.jsonl>   aggregate Phase 18 workload events (--duration seconds)
   help                      show this help
   version                   show version
 

@@ -4,7 +4,9 @@
 
 use std::path::{Path, PathBuf};
 use tpt_weave_context::{LazySources, SourceProvider};
-use tpt_weave_core::{Manifest, PrivacyConfig, Revision, manifest_path};
+use tpt_weave_core::{
+    Manifest, PrivacyConfig, RepositoryRegistry, Revision, discover_repository_root, manifest_path,
+};
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph, graph_path};
 use tpt_weave_index::{CargoIndex, GitRepository};
 use tpt_weave_rust::{ParseCache, ParseCacheStats, ParseFileInput};
@@ -24,14 +26,13 @@ pub struct Workspace {
     manifest: Option<Manifest>,
     repository_name: String,
     parse_cache: ParseCacheStats,
+    registry: Option<RepositoryRegistry>,
 }
 
 impl Workspace {
     /// Canonicalises `root` for path-based commands.
     pub fn canonical_root(root: impl AsRef<Path>) -> Result<PathBuf, CliError> {
-        let root = root.as_ref();
-        root.canonicalize()
-            .map_err(|e| CliError::internal(format!("{}: {e}", root.display())))
+        discover_repository_root(root).map_err(Into::into)
     }
 
     /// Returns `true` when the local manifest is newer than the persisted
@@ -80,15 +81,22 @@ impl Workspace {
             .as_ref()
             .map(|m| m.privacy.clone())
             .unwrap_or_default();
+        let registry = RepositoryRegistry::load_standard(&root)
+            .map_err(|error| CliError::internal(error.to_string()))?;
         let cargo = CargoIndex::load(&root)?;
-        let previous_graph = RepositoryGraph::load(&graph_path(&root)).ok();
+        let previous_graph = RepositoryGraph::load(graph_path(&root)).ok();
         let sources = LazySources::open_with_privacy(&root, &privacy)
             .map_err(|e| CliError::internal(format!("failed to load sources: {e}")))?;
 
         let mut builder = GraphBuilder::new(&repository_name, revision, cargo.clone());
         // Cross-repository registration: TPT-named path dependencies become
         // external links (spec.md section 11 / section 28 adopt step).
-        for (package, repository) in discover_tpt_dependencies(&cargo) {
+        for (package, repository) in cargo.discover_tpt_dependencies() {
+            let repository = registry
+                .as_ref()
+                .and_then(|registry| registry.get(&package))
+                .map(|entry| entry.name.clone())
+                .unwrap_or(repository);
             builder = builder.link_cross_repository(package, repository);
         }
         let repository_id = tpt_weave_core::RepositoryId::new(&repository_name);
@@ -134,6 +142,7 @@ impl Workspace {
             manifest,
             repository_name,
             parse_cache: parse_stats,
+            registry,
         })
     }
 
@@ -177,6 +186,8 @@ impl Workspace {
             .as_ref()
             .map(|m| m.privacy.clone())
             .unwrap_or_default();
+        let registry = RepositoryRegistry::load_standard(&root)
+            .map_err(|error| CliError::internal(error.to_string()))?;
         let sources = LazySources::open_with_privacy(&root, &privacy)
             .map_err(|e| CliError::internal(format!("failed to load sources: {e}")))?;
         let repository_name = manifest
@@ -191,6 +202,7 @@ impl Workspace {
             manifest,
             repository_name,
             parse_cache: ParseCacheStats::default(),
+            registry,
         })
     }
 
@@ -238,6 +250,11 @@ impl Workspace {
         self.manifest.as_ref()
     }
 
+    /// Optional standard repository registry loaded from the working tree.
+    pub fn registry(&self) -> Option<&RepositoryRegistry> {
+        self.registry.as_ref()
+    }
+
     /// Repository display name (manifest `repository` or directory name).
     pub fn repository_name(&self) -> &str {
         &self.repository_name
@@ -252,19 +269,9 @@ impl Workspace {
     }
 }
 
-/// Sorted `(package, repository)` pairs for `tpt-*` non-member dependencies.
+/// Compatibility wrapper for the shared [`CargoIndex`] discovery method.
 pub fn discover_tpt_dependencies(cargo: &tpt_weave_index::CargoIndex) -> Vec<(String, String)> {
-    let members: std::collections::BTreeSet<&str> =
-        cargo.workspace_members.iter().map(String::as_str).collect();
-    let mut links: std::collections::BTreeSet<(String, String)> = std::collections::BTreeSet::new();
-    for package in cargo.workspace_packages() {
-        for dep in &package.dependencies {
-            if dep.name.starts_with("tpt-") && !members.contains(dep.name.as_str()) {
-                links.insert((dep.name.clone(), dep.name.clone()));
-            }
-        }
-    }
-    links.into_iter().collect()
+    cargo.discover_tpt_dependencies()
 }
 
 /// Collects `.rs` files under `package_root`, keyed by path relative to

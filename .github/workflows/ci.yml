@@ -48,3 +48,32 @@ jobs:
       # excluded so library crates keep MSRV 1.85 (docs/decisions.md §1).
       - name: Build
         run: cargo build --workspace --exclude tpt-weave-mcp
+
+  index:
+    name: Index validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build CLI
+        run: cargo build -p tpt-weave-cli
+      - name: Initialize and build index
+        run: |
+          cargo run -p tpt-weave-cli -- init --force
+          cargo run -p tpt-weave-cli -- index --full --json
+      - name: Validate generated index
+        run: |
+          test -s .tpt-weave/graph.json
+          cargo run -p tpt-weave-cli -- doctor --json
+          cargo run -p tpt-weave-cli -- overview --json
+
+  package:
+    name: Core package validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Package and verify core crate
+        run: cargo package -p tpt-weave-core --locked

@@ -238,6 +238,73 @@ fn doctor_after_adopt_passes() {
 }
 
 #[test]
+fn workload_aggregates_jsonl_capture_with_duration() {
+    let dir = fixture();
+    let capture = r#"{"kind":"context","id":"overview","raw_tokens":100,"delivered_tokens":20}
+{"kind":"model_call","id":"attempt-1","raw_tokens":0,"delivered_tokens":20,"success":true,"cost_usd":0.01,"baseline_cost_usd":0.02}
+"#;
+    fs::write(dir.join("session.jsonl"), capture).expect("write capture");
+
+    let (code, human, stderr) = cli(&dir, &["workload", "session.jsonl", "--duration", "3600"]);
+    assert_eq!(code, 0, "{stderr}");
+    assert!(human.contains("raw tokens: 100"), "{human}");
+    assert!(human.contains("model success rate: 100.0%"), "{human}");
+
+    let (code, json, stderr) = cli(
+        &dir,
+        &["--json", "workload", "session.jsonl", "--duration", "3600"],
+    );
+    assert_eq!(code, 0, "{stderr}");
+    let value: serde_json::Value = serde_json::from_str(json.trim()).expect("workload json");
+    assert_eq!(value["raw_tokens"], 100);
+    assert_eq!(value["delivered_tokens"], 40);
+    assert_eq!(value["cost_savings_usd"], 0.01);
+    assert_eq!(value["raw_tokens_per_hour"], 100.0);
+}
+
+#[test]
+fn workload_missing_capture_is_an_error() {
+    let dir = fixture();
+    let (code, _, stderr) = cli(&dir, &["workload", "missing.jsonl"]);
+    assert_eq!(code, 1, "{stderr}");
+    assert!(stderr.contains("workload capture"), "{stderr}");
+}
+
+#[test]
+fn integration_emits_standard_agent_mcp_and_registry_metadata() {
+    let dir = fixture();
+    let (code, agent, stderr) = cli(&dir, &["--json", "integration", "agent", "--write"]);
+    assert_eq!(code, 0, "{stderr}");
+    let agent_value: serde_json::Value = serde_json::from_str(agent.trim()).expect("agent json");
+    assert_eq!(agent_value["schema"], 1);
+    assert_eq!(
+        agent_value["env"]["TPT_WEAVE_PATH"],
+        dir.display().to_string()
+    );
+    assert!(dir.join(".tpt-weave").join("agent.json").exists());
+
+    let (code, mcp, stderr) = cli(&dir, &["--json", "integration", "mcp", "--write"]);
+    assert_eq!(code, 0, "{stderr}");
+    let mcp_value: serde_json::Value = serde_json::from_str(mcp.trim()).expect("mcp json");
+    assert_eq!(mcp_value["name"], "tpt-weave");
+    assert_eq!(
+        mcp_value["env"]["TPT_WEAVE_PATH"],
+        dir.display().to_string()
+    );
+    assert!(dir.join(".tpt-weave").join("mcp.json").exists());
+
+    let (code, registry, stderr) = cli(&dir, &["--json", "integration", "registry"]);
+    assert_eq!(code, 0, "{stderr}");
+    let registry_value: serde_json::Value =
+        serde_json::from_str(registry.trim()).expect("registry json");
+    assert_eq!(
+        registry_value["repository"],
+        dir.file_name().unwrap().to_string_lossy().as_ref()
+    );
+    assert!(registry_value["discovered_tpt_dependencies"].is_array());
+}
+
+#[test]
 fn expand_unknown_context_id_falls_through_to_symbol_not_found() {
     let dir = fixture();
     cli(&dir, &["init"]);

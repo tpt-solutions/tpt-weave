@@ -20,6 +20,9 @@ members = [
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
+repository = "https://github.com/tpt-solutions/tpt-weave"
+homepage = "https://github.com/tpt-solutions/tpt-weave"
+documentation = "https://docs.rs/tpt-weave"
 license = "MIT"
 authors = ["TPT Solutions"]
 
@@ -30,18 +33,18 @@ toml = "0.8"
 syn = { version = "2", features = ["full", "extra-traits", "visit"] }
 quote = "1"
 proc-macro2 = { version = "1", features = ["span-locations"] }
-tpt-weave-core = { path = "crates/tpt-weave-core" }
-tpt-weave-index = { path = "crates/tpt-weave-index" }
-tpt-weave-rust = { path = "crates/tpt-weave-rust" }
-tpt-weave-graph = { path = "crates/tpt-weave-graph" }
-tpt-weave-context = { path = "crates/tpt-weave-context" }
-tpt-weave-tools = { path = "crates/tpt-weave-tools" }
-tpt-weave-cache = { path = "crates/tpt-weave-cache" }
-tpt-weave-decisions = { path = "crates/tpt-weave-decisions" }
-tpt-weave-openrouter = { path = "crates/tpt-weave-openrouter" }
-tpt-weave-mcp = { path = "crates/tpt-weave-mcp" }
-tpt-weave-cli = { path = "crates/tpt-weave-cli" }
-tpt-weave-eval = { path = "crates/tpt-weave-eval" }
+tpt-weave-core = { version = "0.1.0", path = "crates/tpt-weave-core" }
+tpt-weave-index = { version = "0.1.0", path = "crates/tpt-weave-index" }
+tpt-weave-rust = { version = "0.1.0", path = "crates/tpt-weave-rust" }
+tpt-weave-graph = { version = "0.1.0", path = "crates/tpt-weave-graph" }
+tpt-weave-context = { version = "0.1.0", path = "crates/tpt-weave-context" }
+tpt-weave-tools = { version = "0.1.0", path = "crates/tpt-weave-tools" }
+tpt-weave-cache = { version = "0.1.0", path = "crates/tpt-weave-cache" }
+tpt-weave-decisions = { version = "0.1.0", path = "crates/tpt-weave-decisions" }
+tpt-weave-openrouter = { version = "0.1.0", path = "crates/tpt-weave-openrouter" }
+tpt-weave-mcp = { version = "0.1.0", path = "crates/tpt-weave-mcp" }
+tpt-weave-cli = { version = "0.1.0", path = "crates/tpt-weave-cli" }
+tpt-weave-eval = { version = "0.1.0", path = "crates/tpt-weave-eval" }
 rmcp = { version = "3.4", default-features = false, features = [
     "server",
     "transport-io",

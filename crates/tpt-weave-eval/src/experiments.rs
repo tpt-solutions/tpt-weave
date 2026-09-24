@@ -6,6 +6,8 @@
 use crate::metrics::estimate_text_tokens;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fs;
+use std::path::Path;
 use std::time::Instant;
 use tpt_weave_context::{ContextError, Selection, SourceProvider, estimate_tokens, represent_file};
 use tpt_weave_core::ContextLevel;
@@ -118,6 +120,111 @@ impl ExperimentSuite {
     /// Pretty JSON representation.
     pub fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    /// Parses and validates an experiment report.
+    pub fn from_json(text: &str) -> Result<Self, ExperimentReportError> {
+        let suite: Self = serde_json::from_str(text).map_err(ExperimentReportError::Json)?;
+        suite.validate()?;
+        Ok(suite)
+    }
+
+    /// Validates schema, labels, and externally supplied measurements.
+    pub fn validate(&self) -> Result<(), ExperimentReportError> {
+        if self.schema != EXPERIMENT_REPORT_SCHEMA {
+            return Err(ExperimentReportError::Schema {
+                found: self.schema,
+                expected: EXPERIMENT_REPORT_SCHEMA,
+            });
+        }
+        if self.experiment.trim().is_empty() {
+            return Err(ExperimentReportError::Invalid(
+                "experiment name must not be empty".to_string(),
+            ));
+        }
+        let mut variants = std::collections::BTreeSet::new();
+        for case in &self.cases {
+            if case.variant.trim().is_empty() {
+                return Err(ExperimentReportError::Invalid(
+                    "variant name must not be empty".to_string(),
+                ));
+            }
+            if !variants.insert(case.variant.as_str()) {
+                return Err(ExperimentReportError::Invalid(format!(
+                    "duplicate variant `{}`",
+                    case.variant
+                )));
+            }
+            if let Some(accuracy) = case.accuracy
+                && (!accuracy.is_finite() || !(0.0..=1.0).contains(&accuracy))
+            {
+                return Err(ExperimentReportError::Invalid(format!(
+                    "accuracy for `{}` must be finite and in [0, 1]",
+                    case.variant
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Writes a validated report as pretty JSON.
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), ExperimentReportError> {
+        self.validate()?;
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(ExperimentReportError::Io)?;
+        }
+        fs::write(path, self.to_json()).map_err(ExperimentReportError::Io)
+    }
+
+    /// Loads and validates a report from `path`.
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, ExperimentReportError> {
+        Self::from_json(&fs::read_to_string(path).map_err(ExperimentReportError::Io)?)
+    }
+}
+
+/// Errors loading or validating an experiment report.
+#[derive(Debug)]
+pub enum ExperimentReportError {
+    Io(std::io::Error),
+    Json(serde_json::Error),
+    Invalid(String),
+    Schema { found: u32, expected: u32 },
+}
+
+impl std::fmt::Display for ExperimentReportError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Io(error) => write!(f, "experiment report I/O error: {error}"),
+            Self::Json(error) => write!(f, "experiment report JSON error: {error}"),
+            Self::Invalid(detail) => write!(f, "invalid experiment report: {detail}"),
+            Self::Schema { found, expected } => write!(
+                f,
+                "experiment report schema {found} does not match {expected}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ExperimentReportError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Io(error) => Some(error),
+            Self::Json(error) => Some(error),
+            Self::Invalid(_) | Self::Schema { .. } => None,
+        }
+    }
+}
+
+impl From<std::io::Error> for ExperimentReportError {
+    fn from(error: std::io::Error) -> Self {
+        Self::Io(error)
+    }
+}
+
+impl From<serde_json::Error> for ExperimentReportError {
+    fn from(error: serde_json::Error) -> Self {
+        Self::Json(error)
     }
 }
 
