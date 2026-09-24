@@ -1,10 +1,12 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-24):** Phases 0–16 are implemented. Phase 15 includes deterministic performance
-> work, parallel parsing, a fingerprint-keyed parse cache, and benchmark primitives. Phase 16 includes
-> secret redaction, path privacy, fail-closed local-only provider construction, and content-free remote
-> audit logging. Phase 17 includes experiment-matrix and benchmark APIs; live JEv/production workload
-> measurements remain data-collection work. Phases 17 measurement items and 18–20 remain pending.
+> **Status (2026-09-24):** Phases 0–16 are implemented. Phase 7 cache/graph invalidation now checks a
+> content-aware working-tree fingerprint and manifest freshness, not just HEAD, so uncommitted edits no
+> longer reuse a stale graph. Phase 15 includes deterministic performance work, parallel parsing, a
+> fingerprint-keyed parse cache, and benchmark primitives. Phase 16 includes secret redaction, path
+> privacy, fail-closed local-only provider construction, and content-free remote audit logging. Phase 17
+> includes experiment-matrix and benchmark APIs; live JEv/production workload measurements remain
+> data-collection work. Phases 17 measurement items and 18–20 remain pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -181,6 +183,14 @@
 - [x] Implement schema invalidation.
 - [x] Implement manual cache clear.
 - [x] Add cache statistics.
+
+Revision invalidation now also covers uncommitted state: the CLI's `index`
+graph-reuse check and the MCP workspace's `refresh_if_stale` both compare a
+content-aware working-tree fingerprint (`GitRepository::worktree_fingerprint`,
+covering staged/unstaged diffs and untracked file contents) in addition to
+HEAD, and reject a persisted graph when the local manifest is newer than the
+graph file. Previously a clean-HEAD check alone let an uncommitted source or
+manifest edit reuse a stale graph.
 
 ## Phase 8 — JEv
 
