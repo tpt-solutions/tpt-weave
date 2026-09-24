@@ -1,12 +1,14 @@
 # tpt-weave — TODO
 
-> **Status (2026-09-23):** Phases 0–11 complete (repository + decisions, core model + manifest
+> **Status (2026-09-24):** Phases 0–12 complete (repository + decisions, core model + manifest
 > configuration, cargo/git/syn indexer, symbol graph, hierarchical representations + expansion,
 > deterministic context retrieval, tool output reduction, filesystem cache, JEv decision
 > provider/OpenRouter client/policy engine, MCP server with 11 tools + tool minimisation, CLI
 > with all planned subcommands + human/JSON/compact output + exit codes, evaluation harness with
-> baseline/weave captures + net-token-reduction metrics + local adopt benchmark; 178 tests
-> passing, clippy `-D warnings` clean). Phases 12–20 pending.
+> baseline/weave captures + net-token-reduction metrics + local adopt benchmark; Phase 12
+> integrations: tpt-infer indexed + retrieval verified (91.9 % net reduction), tpt-uir and
+> tpt-raglite evaluated (`docs/integrations/`), tpt-code-command-center routing Rust context
+> through the shared index with dashboard + measured baseline/post numbers). Phases 13–20 pending.
 
 ## Phase 0 — Repository and Architecture
 
@@ -316,30 +318,30 @@ tpt-weave cache
 
 ### tpt-code-command-center
 
-- [ ] Add tpt-weave integration.
-- [ ] Replace duplicated repository exploration.
-- [ ] Route context requests through tpt-weave.
-- [ ] Add token dashboard.
-- [ ] Measure baseline.
-- [ ] Measure post-integration.
+- [x] Add tpt-weave integration.
+- [x] Replace duplicated repository exploration.
+- [x] Route context requests through tpt-weave.
+- [x] Add token dashboard.
+- [x] Measure baseline.
+- [x] Measure post-integration.
 
 ### tpt-infer
 
-- [ ] Index repository.
-- [ ] Test symbol retrieval.
-- [ ] Test dependency traversal.
-- [ ] Test model context.
+- [x] Index repository.
+- [x] Test symbol retrieval.
+- [x] Test dependency traversal.
+- [x] Test model context.
 
 ### tpt-uir
 
-- [ ] Evaluate as context transport/IR.
-- [ ] Avoid unnecessary duplicate representations.
+- [x] Evaluate as context transport/IR.
+- [x] Avoid unnecessary duplicate representations.
 
 ### tpt-raglite
 
-- [ ] Evaluate as optional semantic retrieval backend.
-- [ ] Compare structural retrieval vs semantic retrieval.
-- [ ] Avoid duplicating RAG functionality unnecessarily.
+- [x] Evaluate as optional semantic retrieval backend.
+- [x] Compare structural retrieval vs semantic retrieval.
+- [x] Avoid duplicating RAG functionality unnecessarily.
 
 ## Phase 13 — Complex TPT Repositories
 

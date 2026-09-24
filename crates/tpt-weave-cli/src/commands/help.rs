@@ -20,6 +20,7 @@ Commands:
   refs <name>               references to a symbol
   expand <context-id>       next representation level / full source
   context \"<task>\"          build task context within the configured budget
+  skeleton <file>           one file's representation, skeleton by default (--level 0-5)
   diff                      reduced working-tree diff
   stats                     token accounting + cache statistics
   cache [status|clear]      cache management (default: status)

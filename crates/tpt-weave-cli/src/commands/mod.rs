@@ -11,6 +11,7 @@ mod index;
 mod init;
 mod overview;
 mod refs;
+mod skeleton;
 mod stats;
 mod symbol;
 
@@ -71,6 +72,7 @@ pub fn dispatch(cli: &Cli) -> Result<Rendered, CliError> {
             max_level,
             no_deps,
         } => context::run(cli, task, *budget, *max_level, *no_deps),
+        Command::Skeleton { path, level } => skeleton::run(cli, path, *level),
         Command::Diff => diff::run(cli),
         Command::Stats => stats::run(cli),
         Command::Cache { action } => cache::run(cli, *action),

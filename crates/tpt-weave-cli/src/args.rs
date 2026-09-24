@@ -53,6 +53,8 @@ pub enum Command {
         max_level: Option<u8>,
         no_deps: bool,
     },
+    /// One file's hierarchical representation (default: skeleton).
+    Skeleton { path: String, level: Option<u8> },
     /// Reduced working-tree diff.
     Diff,
     /// Token accounting + cache statistics.
@@ -193,10 +195,11 @@ fn apply_flag(
                 Some(Command::Expand { level: slot, .. })
                 | Some(Command::Context {
                     max_level: slot, ..
-                }) => *slot = Some(level),
+                })
+                | Some(Command::Skeleton { level: slot, .. }) => *slot = Some(level),
                 _ => {
                     return Err(CliError::usage(
-                        "`--level` is only valid with `expand` or `context`",
+                        "`--level` is only valid with `expand`, `context` or `skeleton`",
                     ));
                 }
             }
@@ -246,6 +249,10 @@ fn parse_command(name: &str, raw: &mut Args) -> Result<Command, CliError> {
             budget: None,
             max_level: None,
             no_deps: false,
+        },
+        "skeleton" => Command::Skeleton {
+            path: require_arg(raw, "skeleton", "<file>")?,
+            level: None,
         },
         "diff" => Command::Diff,
         "stats" => Command::Stats,
@@ -350,6 +357,30 @@ mod tests {
             Command::Context { task, .. } => assert_eq!(task, "fix the bug"),
             other => panic!("wrong command: {other:?}"),
         }
+    }
+
+    #[test]
+    fn parses_skeleton_path_and_level() {
+        let cli = parse_str(&["skeleton", "src/lib.rs"]).expect("ok");
+        match cli.command {
+            Command::Skeleton { path, level } => {
+                assert_eq!(path, "src/lib.rs");
+                assert_eq!(level, None);
+            }
+            other => panic!("wrong command: {other:?}"),
+        }
+        let cli = parse_str(&["skeleton", "src/lib.rs", "--level", "signatures"]).expect("ok");
+        match cli.command {
+            Command::Skeleton { path, level } => {
+                assert_eq!(path, "src/lib.rs");
+                assert_eq!(level, Some(2));
+            }
+            other => panic!("wrong command: {other:?}"),
+        }
+        let error = parse_str(&["skeleton"]).expect_err("usage");
+        assert_eq!(error.code(), crate::error::ExitCode::Usage);
+        let error = parse_str(&["overview", "--level", "3"]).expect_err("usage");
+        assert_eq!(error.code(), crate::error::ExitCode::Usage);
     }
 
     #[test]

@@ -349,3 +349,48 @@ fn binary_target_is_declared() {
     assert!(manifest.contains("name = \"tpt-weave\""));
     let _ = Command::new("true");
 }
+
+#[test]
+fn skeleton_renders_file_representations() {
+    let dir = fixture();
+    let (code, _, stderr) = cli(&dir, &["init"]);
+    assert_eq!(code, 0, "{stderr}");
+    let (code, _, stderr) = cli(&dir, &["index"]);
+    assert_eq!(code, 0, "{stderr}");
+
+    let (code, human, stderr) = cli(&dir, &["skeleton", "src/lib.rs"]);
+    assert_eq!(code, 0, "{stderr}");
+    assert!(human.contains("src/lib.rs"), "{human}");
+    assert!(human.contains("level: skeleton"), "{human}");
+    assert!(human.contains("pub fn add"), "{human}");
+
+    let (code, json, stderr) = cli(&dir, &["--json", "skeleton", "src/lib.rs"]);
+    assert_eq!(code, 0, "{stderr}");
+    let value: serde_json::Value = serde_json::from_str(&json).expect("skeleton json");
+    assert_eq!(value["path"], "src/lib.rs");
+    assert!(value["token_estimate"].as_u64().expect("tokens") > 0);
+    assert!(
+        value["text"]
+            .as_str()
+            .expect("text")
+            .contains("pub struct Counter")
+    );
+
+    // Explicit level override: signatures render only signature lines.
+    let (code, signatures, stderr) = cli(&dir, &["skeleton", "src/lib.rs", "--level", "2"]);
+    assert_eq!(code, 0, "{stderr}");
+    assert!(signatures.contains("level: signatures"), "{signatures}");
+
+    // Windows-style separators are normalised.
+    let (code, _, stderr) = cli(&dir, &["skeleton", "src\\lib.rs"]);
+    assert_eq!(code, 0, "{stderr}");
+
+    // Unknown file → exit 3; existing tree without an index → exit 4.
+    let (code, _, _) = cli(&dir, &["skeleton", "src/missing.rs"]);
+    assert_exit(code, ExitCode::NotFound, "");
+    let bare = std::env::temp_dir().join("tpt-weave-cli-skeleton-nomanifest");
+    let _ = fs::remove_dir_all(&bare);
+    fs::create_dir_all(&bare).expect("mkdir bare");
+    let (code, _, _) = cli(&bare, &["skeleton", "src/lib.rs"]);
+    assert_exit(code, ExitCode::Stale, "");
+}
