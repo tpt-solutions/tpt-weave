@@ -27,7 +27,7 @@ pub use expand::{
 };
 pub use levels::{FileRepresentation, Selection, estimate_tokens, represent_file};
 pub use retrieval::{RepositoryOverview, Retriever};
-pub use sources::{SourceProvider, Sources};
+pub use sources::{LazySources, SourceProvider, Sources};
 
 use std::fmt;
 

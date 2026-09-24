@@ -5,11 +5,11 @@
 //! conservative invalidation).
 
 use std::path::{Path, PathBuf};
-use tpt_weave_context::Sources;
-use tpt_weave_core::Revision;
+use tpt_weave_context::{LazySources, SourceProvider};
+use tpt_weave_core::{Manifest, PrivacyConfig, Revision, manifest_path};
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph};
 use tpt_weave_index::{CargoIndex, GitRepository};
-use tpt_weave_rust::{FileInput, parse_file};
+use tpt_weave_rust::{ParseCache, ParseFileInput};
 
 /// Placeholder revision for non-git trees.
 pub const NO_REVISION: &str = "0000000000000000000000000000000000000000";
@@ -40,12 +40,12 @@ impl std::fmt::Display for WorkspaceError {
 
 impl std::error::Error for WorkspaceError {}
 
-/// A loaded repository: graph + in-memory sources + git handle.
+/// A loaded repository: graph + lazily-read sources + git handle.
 #[derive(Debug)]
 pub struct Workspace {
     root: PathBuf,
     graph: RepositoryGraph,
-    sources: Sources,
+    sources: LazySources,
     git: Option<GitRepository>,
     repository_name: String,
 }
@@ -62,6 +62,14 @@ impl Workspace {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| "workspace".to_string());
+        let manifest_file = manifest_path(&root);
+        let privacy = if manifest_file.exists() {
+            Manifest::load(&manifest_file)
+                .map_err(|error| WorkspaceError::Index(error.to_string()))?
+                .privacy
+        } else {
+            PrivacyConfig::default()
+        };
 
         let git = GitRepository::discover(&root).ok();
         let revision = match &git {
@@ -70,12 +78,13 @@ impl Workspace {
                 .map_err(|e| WorkspaceError::Git(e.to_string()))?,
             None => Revision::new(NO_REVISION),
         };
-
         let cargo = CargoIndex::load(&root).map_err(|e| WorkspaceError::Index(e.to_string()))?;
-        let sources = Sources::load_dir(&root).map_err(|e| WorkspaceError::Io(e.to_string()))?;
+        let sources = LazySources::open_with_privacy(&root, &privacy)
+            .map_err(|e| WorkspaceError::Io(e.to_string()))?;
 
         let mut builder = GraphBuilder::new(&repository_name, revision, cargo.clone());
-        let mut parsed_any = false;
+        let repository_id = tpt_weave_core::RepositoryId::new(&repository_name);
+        let mut parse_inputs = Vec::new();
         for package in cargo.workspace_packages() {
             let package_root = package
                 .manifest_path
@@ -84,20 +93,23 @@ impl Workspace {
                 .unwrap_or_else(|| root.clone());
             // Canonicalize so `strip_prefix(root)` matches Windows `\\?\` forms.
             let package_root = package_root.canonicalize().unwrap_or(package_root);
-            for (relative, text) in collect_rust_files(&package_root, &root)
+            for (relative, text) in collect_rust_files(&package_root, &root, &privacy)
                 .map_err(|e| WorkspaceError::Io(e.to_string()))?
             {
-                let input = FileInput {
-                    repository: &tpt_weave_core::RepositoryId::new(&repository_name),
-                    package: &package.name,
-                    path: &relative,
-                    module_prefix: &[],
-                };
-                if let Ok(parsed) = parse_file(&input, &text) {
-                    builder = builder.add_file(&package.name, parsed);
-                    parsed_any = true;
-                }
+                parse_inputs.push(ParseFileInput {
+                    repository: repository_id.clone(),
+                    package: package.name.clone(),
+                    path: relative,
+                    module_prefix: Vec::new(),
+                    source: text,
+                });
             }
+        }
+        let mut parse_cache = ParseCache::for_repository(&root);
+        let parsed_files = parse_cache.parse_files(parse_inputs);
+        let parsed_any = !parsed_files.is_empty();
+        for parsed in parsed_files {
+            builder = builder.add_file(parsed.package, parsed.file);
         }
         if !parsed_any {
             return Err(WorkspaceError::Empty);
@@ -122,8 +134,8 @@ impl Workspace {
         &self.graph
     }
 
-    /// In-memory file sources.
-    pub fn sources(&self) -> &Sources {
+    /// Lazily-read repository file sources.
+    pub fn sources(&self) -> &dyn SourceProvider {
         &self.sources
     }
 
@@ -168,14 +180,20 @@ impl Workspace {
 fn collect_rust_files(
     package_root: &Path,
     repo_root: &Path,
+    privacy: &PrivacyConfig,
 ) -> std::io::Result<Vec<(String, String)>> {
     let mut out = Vec::new();
-    walk(package_root, repo_root, &mut out)?;
+    walk(package_root, repo_root, privacy, &mut out)?;
     out.sort_by(|a, b| a.0.cmp(&b.0));
     Ok(out)
 }
 
-fn walk(dir: &Path, repo_root: &Path, out: &mut Vec<(String, String)>) -> std::io::Result<()> {
+fn walk(
+    dir: &Path,
+    repo_root: &Path,
+    privacy: &PrivacyConfig,
+    out: &mut Vec<(String, String)>,
+) -> std::io::Result<()> {
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
         let name = entry.file_name();
@@ -185,7 +203,7 @@ fn walk(dir: &Path, repo_root: &Path, out: &mut Vec<(String, String)>) -> std::i
         }
         let path = entry.path();
         if path.is_dir() {
-            walk(&path, repo_root, out)?;
+            walk(&path, repo_root, privacy, out)?;
         } else if path.extension().is_some_and(|ext| ext == "rs") {
             let relative = match path.strip_prefix(repo_root) {
                 Ok(rel) => rel.to_string_lossy().replace('\\', "/"),
@@ -201,6 +219,9 @@ fn walk(dir: &Path, repo_root: &Path, out: &mut Vec<(String, String)>) -> std::i
                     }
                 }
             };
+            if privacy.is_excluded(&relative) || privacy.is_private_path(&path.to_string_lossy()) {
+                continue;
+            }
             let text = std::fs::read_to_string(&path)?;
             out.push((relative, text));
         }

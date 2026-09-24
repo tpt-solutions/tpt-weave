@@ -5,6 +5,7 @@ use crate::args::Cli;
 use crate::error::CliError;
 use crate::workspace::Workspace;
 use serde_json::json;
+use std::time::Instant;
 use tpt_weave_context::Retriever;
 use tpt_weave_core::{ContextLevel, ContextRequest};
 
@@ -37,13 +38,16 @@ pub fn run(
 
     let retriever = Retriever::new(workspace.graph(), workspace.sources());
     let changed = workspace.changed_files();
+    let started = Instant::now();
     let response = retriever.retrieve(&request, &changed)?;
+    let elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
 
     let mut human = format!(
-        "context: {}\ntask: {}\ncandidates: {}\n",
+        "context: {}\ntask: {}\ncandidates: {}\nelapsed: {:.1} ms\n",
         response.context_id.as_str(),
         request.task,
-        response.candidates.len()
+        response.candidates.len(),
+        elapsed_ms
     );
     for candidate in &response.candidates {
         let source = match &candidate.source {
@@ -98,6 +102,7 @@ pub fn run(
         "decision_provider": response.decision_provider,
         "changed_files": changed,
         "summary": response.tokens.summary(),
+        "elapsed_ms": elapsed_ms,
     });
 
     let mut rendered = Rendered::new(human.trim_end(), json);

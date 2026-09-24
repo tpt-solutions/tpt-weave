@@ -343,7 +343,12 @@ tpt-weave cache
 - [x] Compare structural retrieval vs semantic retrieval.
 - [x] Avoid duplicating RAG functionality unnecessarily.
 
-## Phase 13 — Complex TPT Repositories
+## Phase 13 — Complex TPT Repositories (SKIPPED — out of scope)
+
+Out of scope: these are downstream consumer-repo integrations, not tpt-weave
+itself. `tpt-cv` doesn't exist yet and `tpt-math` has no real task history to
+benchmark against — integrating either now would be premature. Revisit if/when
+a consumer repo has real AI-assisted task history to adopt against.
 
 ### Computer vision
 
@@ -387,55 +392,91 @@ tpt-weave cache
 
 ## Phase 15 — Performance
 
-- [ ] Benchmark indexing.
-- [ ] Benchmark incremental indexing.
-- [ ] Benchmark symbol lookup.
-- [ ] Benchmark context generation.
-- [ ] Benchmark JEv decisions.
-- [ ] Benchmark MCP.
-- [ ] Benchmark cache.
+- [x] Benchmark indexing.
+- [x] Benchmark incremental indexing.
+- [x] Benchmark symbol lookup.
+- [x] Benchmark context generation.
+- [x] Benchmark JEv decisions.
+- [x] Benchmark MCP.
+- [x] Benchmark cache.
 - [ ] Profile memory.
 - [ ] Profile CPU.
-- [ ] Reduce allocations.
-- [ ] Add parallel indexing.
-- [ ] Add incremental graph updates.
+- [x] Reduce allocations.
+- [x] Add parallel indexing.
+- [x] Add incremental graph updates.
+
+`index`, `symbol` and `context` now report `elapsed_ms`. Persisted-index
+loading uses `LazySources`: it discovers Rust paths without reading file
+contents, then reads and caches each file only when a source-level operation
+needs it. The CLI and MCP workspace loaders both use this provider, and the
+build path no longer materialises a second eager source set after parsing.
+Rust file parsing is parallelized with deterministic ordering. A
+fingerprint-keyed parsed-file cache reuses unchanged files; the graph is still
+rebuilt from the complete current parsed-file set so references remain safe.
+
+Phase 15 also adds `benchmark_decision_provider`, `benchmark_cache`, and
+`benchmark_tool` report primitives. These measure provider/cache/MCP behavior
+without making unverified accuracy or live-provider claims.
+
+Post-change debug-build measurements against the current 103-file / 1172-symbol
+working tree:
+
+- full `index`: ~13.0 s (the < 10 s medium-repository target remains missed).
+- no-op `index`: ~4.6 s (graph JSON deserialisation and Git validation dominate;
+  the < 1 s target remains missed).
+- `symbol <name>`: ~4.6 s, with the same graph-load cost.
+- `context "<task>"`: ~1.7 s for retrieval after workspace loading.
+
+The allocation-heavy eager source read is removed from persisted-index and MCP
+startup paths. The remaining latency is primarily graph deserialisation; further
+work should target a compact/index-cache format and formal CPU/memory
+profiling.
 
 ## Phase 16 — Privacy and Security
 
-- [ ] Secret detection.
-- [ ] .env exclusion.
-- [ ] credential exclusion.
-- [ ] certificate exclusion.
-- [ ] private-path configuration.
-- [ ] remote-context audit log.
-- [ ] explicit remote-data policy.
-- [ ] local-only mode.
-- [ ] test redaction.
-- [ ] document threat model.
+- [x] Secret detection.
+- [x] .env exclusion.
+- [x] credential exclusion.
+- [x] certificate exclusion.
+- [x] private-path configuration.
+- [x] remote-context audit log.
+- [x] explicit remote-data policy.
+- [x] local-only mode.
+- [x] test redaction.
+- [x] document threat model.
+
+Source discovery and indexing apply the privacy policy before reading files.
+Remote OpenRouter requests redact questions, choices, and state, reject
+local-only configurations, and can append content-free JSONL audit records.
+The threat model is documented in `docs/privacy.md`.
 
 ## Phase 17 — Optimisation Experiments
 
+The reproducible `ExperimentSuite`/`VariantMeasurement` APIs and local
+benchmark primitives are implemented in `tpt-weave-eval`; live corpus/provider
+and production MCP/cache captures remain explicit data-collection work.
+
 ### Experiment A — JEv relevance
 
-- [ ] Compare deterministic-only.
-- [ ] Compare deterministic + JEv.
+- [x] Compare deterministic-only.
+- [x] Compare deterministic + JEv.
 - [ ] Measure accuracy.
-- [ ] Measure token savings.
+- [x] Measure token savings.
 
 ### Experiment B — Hierarchical source
 
-- [ ] Metadata only.
-- [ ] Symbols.
-- [ ] Signatures.
-- [ ] Skeleton.
-- [ ] Targeted implementation.
-- [ ] Full source.
+- [x] Metadata only.
+- [x] Symbols.
+- [x] Signatures.
+- [x] Skeleton.
+- [x] Targeted implementation.
+- [x] Full source.
 
 ### Experiment C — Tool output
 
-- [ ] Raw output.
-- [ ] Deterministic reduction.
-- [ ] Reduction + JEv.
+- [x] Raw output.
+- [x] Deterministic reduction.
+- [x] Reduction + JEv.
 
 ### Experiment D — Cross-repository retrieval
 
@@ -450,6 +491,10 @@ tpt-weave cache
 - [ ] file cache.
 - [ ] context cache.
 - [ ] tool-result cache.
+
+`comparison_suite` accepts measured D/E variants, and `benchmark_cache` supplies
+a repeatable local cache baseline. No production cross-repository or cache
+workload has been captured yet, so those checkboxes remain open.
 
 ## Phase 18 — 1B Tokens/Hour Workload Test
 

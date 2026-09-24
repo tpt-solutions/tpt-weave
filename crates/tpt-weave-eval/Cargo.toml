@@ -15,6 +15,9 @@ serde_json.workspace = true
 tpt-weave-core.workspace = true
 tpt-weave-graph.workspace = true
 tpt-weave-context.workspace = true
+tpt-weave-tools.workspace = true
+tpt-weave-cache.workspace = true
+tpt-weave-decisions.workspace = true
 
 [dev-dependencies]
 tpt-weave-index.workspace = true

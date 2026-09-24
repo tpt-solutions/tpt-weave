@@ -88,6 +88,86 @@ pub fn parse_file(input: &FileInput<'_>, source: &str) -> Result<ParsedFile, Par
     })
 }
 
+/// Owned input for a parallel parse batch.
+#[derive(Clone, Debug)]
+pub struct ParseFileInput {
+    pub repository: tpt_weave_core::RepositoryId,
+    pub package: String,
+    pub path: String,
+    pub module_prefix: Vec<String>,
+    pub source: String,
+}
+
+/// One successfully parsed file returned by [`parse_files`].
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ParsedSource {
+    pub package: String,
+    pub file: ParsedFile,
+}
+
+/// Parses independent files in parallel while preserving deterministic output
+/// order. Invalid files are skipped, matching the indexer's historical
+/// best-effort behaviour.
+pub fn parse_files(mut inputs: Vec<ParseFileInput>) -> Vec<ParsedSource> {
+    inputs.sort_by(|left, right| {
+        left.path
+            .cmp(&right.path)
+            .then_with(|| left.package.cmp(&right.package))
+    });
+    if inputs.is_empty() {
+        return Vec::new();
+    }
+    let workers = std::thread::available_parallelism()
+        .map(|value| value.get())
+        .unwrap_or(1)
+        .min(inputs.len())
+        .max(1);
+    let chunk_size = inputs.len().div_ceil(workers);
+    let mut parsed = Vec::new();
+
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = inputs
+            .chunks(chunk_size)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    chunk
+                        .iter()
+                        .filter_map(|owned| {
+                            let module_prefix: Vec<&str> =
+                                owned.module_prefix.iter().map(String::as_str).collect();
+                            let input = FileInput {
+                                repository: &owned.repository,
+                                package: &owned.package,
+                                path: &owned.path,
+                                module_prefix: &module_prefix,
+                            };
+                            parse_file(&input, &owned.source)
+                                .ok()
+                                .map(|file| ParsedSource {
+                                    package: owned.package.clone(),
+                                    file,
+                                })
+                        })
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        for handle in handles {
+            if let Ok(mut chunk) = handle.join() {
+                parsed.append(&mut chunk);
+            }
+        }
+    });
+
+    parsed.sort_by(|left, right| {
+        left.file
+            .path
+            .cmp(&right.file.path)
+            .then_with(|| left.package.cmp(&right.package))
+    });
+    parsed
+}
+
 struct Extractor<'a> {
     input: &'a FileInput<'a>,
     module_path: Vec<String>,

@@ -5,11 +5,13 @@ use crate::args::Cli;
 use crate::error::CliError;
 use crate::workspace::Workspace;
 use serde_json::json;
+use std::time::Instant;
 use tpt_weave_graph::graph_path;
 
 pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
     let root = Workspace::canonical_root(&cli.path)?;
     let path = graph_path(&root);
+    let started = Instant::now();
 
     if !full && path.exists() {
         // Reuse the on-disk graph when HEAD still matches (conservative
@@ -29,8 +31,12 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
                     paths.dedup();
                     paths.len()
                 };
+                let elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
                 return Ok(Rendered::new(
-                    format!("index up to date ({} symbols, {} files)", symbols, files),
+                    format!(
+                        "index up to date ({} symbols, {} files, {:.1} ms)",
+                        symbols, files, elapsed_ms
+                    ),
                     json!({
                         "path": path.display().to_string(),
                         "rebuilt": false,
@@ -38,6 +44,7 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
                         "files": files,
                         "revision": existing.revision.sha,
                         "repository": existing.repository.as_str(),
+                        "elapsed_ms": elapsed_ms,
                     }),
                 )
                 .with_detail(format!("revision: {}", existing.revision.short())));
@@ -46,7 +53,9 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
     }
 
     let workspace = Workspace::index_and_save(&root)?;
+    let elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
     let graph = workspace.graph();
+    let parse_cache = workspace.parse_cache_stats();
     let mut files: Vec<&str> = graph.symbols.iter().map(|s| s.file.as_str()).collect();
     files.sort_unstable();
     files.dedup();
@@ -55,10 +64,11 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
 
     Ok(Rendered::new(
         format!(
-            "indexed {} symbols in {} files -> {}",
+            "indexed {} symbols in {} files -> {} ({:.1} ms)",
             symbols,
             files.len(),
-            path.display()
+            path.display(),
+            elapsed_ms
         ),
         json!({
             "path": path.display().to_string(),
@@ -71,11 +81,16 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
             "revision": graph.revision.sha,
             "repository": graph.repository.as_str(),
             "unresolved_mentions": graph.unresolved_mentions,
+            "parse_cache": parse_cache,
+            "elapsed_ms": elapsed_ms,
         }),
     )
     .with_detail(format!(
-        "revision: {}\npackages: {}",
+        "revision: {}\npackages: {}\nparse cache: {} hits / {} misses\nelapsed: {:.1} ms",
         graph.revision.short(),
-        workspace.repository_name()
+        workspace.repository_name(),
+        parse_cache.hits,
+        parse_cache.misses,
+        elapsed_ms
     )))
 }

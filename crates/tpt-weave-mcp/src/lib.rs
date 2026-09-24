@@ -7,11 +7,13 @@
 
 #![forbid(unsafe_code)]
 
+pub mod benchmark;
 pub mod catalog;
 pub mod server;
 pub mod tools;
 pub mod workspace;
 
+pub use benchmark::{McpBenchmark, benchmark_tool};
 pub use catalog::{ToolFilter, ToolGroup, ToolSpec, all_tools, schema_overhead};
 pub use server::TptWeaveServer;
 pub use tools::ToolError;

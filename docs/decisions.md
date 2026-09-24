@@ -90,13 +90,15 @@ tpt-weave cache [status|clear]      # cache management (default: status)
   (spec §27 `local-only mode`).
 - Conservative default exclusions: `.env`, `.env.*`, `secrets/`, `credentials/`, `*.pem`, `*.key`,
   `*.crt`, `*.p12`, `id_rsa*`. Pattern forms: exact path segment, `dir/` (any directory of that name),
-  `*.ext`, `prefix*`.
+  `*.ext`, `prefix*`. `[privacy].private_paths` adds absolute or relative private path prefixes.
 - API keys are **never** stored in the manifest — only the environment variable *name*
   (`[provider] api_key_env`, default `OPENROUTER_API_KEY`).
 - Before any remote decision call: apply exclusions, redact environment/credential-looking values, and
-  append a content-free audit entry (repository, item count, token count) when remote decisions are enabled.
+  append a content-free audit entry (repository, item count, token count, redaction count) when remote
+  decisions are enabled. Audit write failures fail closed.
 - `.tpt-weave/` is gitignored by default; the manifest itself is configuration only (no prose, no secrets)
   and may be committed if a repository wants shared defaults (spec §6).
+- The full privacy/threat model is documented in [`privacy.md`](privacy.md).
 
 ## 6. Stable vs experimental APIs
 

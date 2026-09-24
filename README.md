@@ -71,6 +71,8 @@ tpt-weave adopt
 - [todo.md](todo.md) — phased implementation plan
 - [docs/decisions.md](docs/decisions.md) — architecture decisions: MSRV, Rust editions, initial CLI UX,
   schema versioning, privacy/redaction policy, stable vs experimental APIs
+- [docs/privacy.md](docs/privacy.md) — privacy policy, redaction, and threat model
+- [docs/experiments.md](docs/experiments.md) — performance benchmarks and Phase 17 experiment matrices
 
 ## Toolchain
 

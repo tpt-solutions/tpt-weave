@@ -7,9 +7,9 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
-use tpt_weave_core::{JevConfig, ProviderConfig};
+use tpt_weave_core::{JevConfig, PrivacyConfig, ProviderConfig};
 use tpt_weave_decisions::{DecisionCategory, DecisionProvider, ProviderError};
-use tpt_weave_openrouter::OpenRouterProvider;
+use tpt_weave_openrouter::{OpenRouterProvider, RemoteAuditLog};
 
 const SUCCESS_BODY: &str = r#"{
   "id": "dec_abc123",
@@ -109,6 +109,73 @@ fn provider(endpoint: &str) -> OpenRouterProvider {
 
 fn request() -> tpt_weave_decisions::DecisionRequest {
     DecisionCategory::Relevance.ask("src/lib.rs", "fix the bug")
+}
+
+#[test]
+fn redacts_remote_request_content_before_transport() {
+    let provider = provider("http://127.0.0.1:1");
+    let request = tpt_weave_decisions::DecisionRequest {
+        question: "Is this relevant?".to_string(),
+        choices: vec!["relevant".to_string(), "irrelevant".to_string()],
+        context: "OPENROUTER_API_KEY=super-secret-value".to_string(),
+    };
+    let (safe, count) = provider.redact_request(&request);
+    assert!(count > 0);
+    assert!(!safe.context.contains("super-secret-value"));
+    assert!(safe.context.contains("[REDACTED]"));
+}
+
+#[test]
+fn local_only_privacy_rejects_remote_provider() {
+    let error = match OpenRouterProvider::new_with_privacy(
+        "http://127.0.0.1:1",
+        "typesafe/jev-1.13",
+        "test-key",
+        Duration::from_secs(1),
+        0,
+        PrivacyConfig::default(),
+        None,
+    ) {
+        Ok(_) => panic!("local-only policy must reject remote transport"),
+        Err(error) => error,
+    };
+    assert!(matches!(error, ProviderError::Privacy { .. }));
+}
+
+#[test]
+fn remote_audit_log_is_content_free() {
+    let server = Scripted::start(vec![(200, SUCCESS_BODY)]);
+    let path = std::env::temp_dir().join(format!(
+        "tpt-weave-remote-audit-{}.jsonl",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&path);
+    let audit = RemoteAuditLog::new(&path, "demo", "openrouter");
+    let provider = OpenRouterProvider::new_with_privacy(
+        &server.endpoint,
+        "typesafe/jev-1.13",
+        "test-key",
+        Duration::from_secs(2),
+        0,
+        PrivacyConfig {
+            remote_decisions: true,
+            ..PrivacyConfig::default()
+        },
+        Some(audit),
+    )
+    .unwrap();
+    let request = tpt_weave_decisions::DecisionRequest {
+        question: "Is this relevant?".to_string(),
+        choices: vec!["relevant".to_string(), "irrelevant".to_string()],
+        context: "password=do-not-log-this".to_string(),
+    };
+    provider.decide(&request).unwrap();
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(!text.contains("do-not-log-this"));
+    let entry: serde_json::Value = serde_json::from_str(text.trim()).unwrap();
+    assert_eq!(entry["repository"], "demo");
+    assert_eq!(entry["redactions"], 1);
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]

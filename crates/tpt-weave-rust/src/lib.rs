@@ -20,10 +20,14 @@
 
 pub mod mentions;
 pub mod parse;
+pub mod parse_cache;
 pub mod record;
 pub mod skeleton;
 
 pub use mentions::{Mention, MentionKind};
-pub use parse::{FileInput, ParseError, ParsedFile, parse_file};
+pub use parse::{
+    FileInput, ParseError, ParseFileInput, ParsedFile, ParsedSource, parse_file, parse_files,
+};
+pub use parse_cache::{PARSE_CACHE_SCHEMA, ParseCache, ParseCacheStats};
 pub use record::{SymbolRecord, Visibility};
 pub use skeleton::{BODY_PLACEHOLDER, Skeleton, skeleton, skeleton_with};

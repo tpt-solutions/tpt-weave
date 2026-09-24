@@ -13,6 +13,7 @@ pub mod context;
 pub mod files;
 pub mod hash;
 pub mod ids;
+pub mod privacy;
 pub mod tokens;
 
 pub use config::{
@@ -22,6 +23,7 @@ pub use config::{
 pub use context::{ContextCandidate, ContextLevel, ContextRequest, ContextResponse, ContextSource};
 pub use files::{FileRecord, SourceLanguage};
 pub use ids::{ContextId, RepositoryId, Revision, SymbolId, SymbolKind};
+pub use privacy::{REDACTION_MARKER, Redaction, SecretFinding, SecretKind, redact_secrets};
 pub use tokens::TokenAccounting;
 
 /// Schema version written into `.tpt-weave/manifest.toml` and every generated

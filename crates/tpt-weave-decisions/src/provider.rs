@@ -30,6 +30,8 @@ pub enum ProviderError {
     InvalidResponse { detail: String },
     /// Configuration is unusable (bad endpoint, invalid threshold, ...).
     Config { detail: String },
+    /// A privacy policy or remote audit operation rejected the request.
+    Privacy { detail: String },
 }
 
 impl std::fmt::Display for ProviderError {
@@ -51,6 +53,7 @@ impl std::fmt::Display for ProviderError {
                 write!(f, "invalid provider response: {detail}")
             }
             ProviderError::Config { detail } => write!(f, "provider config error: {detail}"),
+            ProviderError::Privacy { detail } => write!(f, "privacy policy error: {detail}"),
         }
     }
 }

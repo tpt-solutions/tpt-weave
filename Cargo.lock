@@ -1281,11 +1281,14 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "tpt-weave-cache",
  "tpt-weave-context",
  "tpt-weave-core",
+ "tpt-weave-decisions",
  "tpt-weave-graph",
  "tpt-weave-index",
  "tpt-weave-rust",
+ "tpt-weave-tools",
 ]
 
 [[package]]
@@ -1343,6 +1346,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde",
+ "serde_json",
  "syn 2.0.119",
  "tpt-weave-core",
 ]

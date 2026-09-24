@@ -16,8 +16,11 @@
 #![forbid(unsafe_code)]
 
 use serde::Deserialize;
-use std::time::Duration;
-use tpt_weave_core::{JevConfig, ProviderConfig};
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tpt_weave_core::{JevConfig, MANIFEST_DIR, PrivacyConfig, ProviderConfig};
 use tpt_weave_decisions::{
     Decision, DecisionOutcome, DecisionProvider, DecisionRequest, ProviderError,
 };
@@ -52,6 +55,94 @@ pub struct ParsedAnswer {
     pub served_model: Option<String>,
 }
 
+/// Default audit file name inside `.tpt-weave/`.
+pub const AUDIT_FILE: &str = "privacy-audit.jsonl";
+
+/// One content-free audit record for a remote decision request.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct RemoteAuditEntry {
+    pub timestamp_ms: u64,
+    pub repository: String,
+    pub provider: String,
+    pub item_count: u64,
+    pub token_count: u64,
+    pub redactions: u64,
+}
+
+/// Append-only JSONL audit log for remote decision calls.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RemoteAuditLog {
+    path: PathBuf,
+    repository: String,
+    provider: String,
+}
+
+impl RemoteAuditLog {
+    /// Creates a log at `path` for one repository/provider pair.
+    pub fn new(
+        path: impl Into<PathBuf>,
+        repository: impl Into<String>,
+        provider: impl Into<String>,
+    ) -> Self {
+        Self {
+            path: path.into(),
+            repository: repository.into(),
+            provider: provider.into(),
+        }
+    }
+
+    /// Creates the standard audit log under a repository's `.tpt-weave/`
+    /// directory.
+    pub fn for_repository(
+        repository_root: &Path,
+        repository: impl Into<String>,
+        provider: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            repository_root.join(MANIFEST_DIR).join(AUDIT_FILE),
+            repository,
+            provider,
+        )
+    }
+
+    /// The audit file path.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Appends one request summary without storing request content.
+    pub fn record(
+        &self,
+        item_count: u64,
+        token_count: u64,
+        redactions: usize,
+    ) -> std::io::Result<RemoteAuditEntry> {
+        if let Some(parent) = self.path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let timestamp_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_millis() as u64)
+            .unwrap_or_default();
+        let entry = RemoteAuditEntry {
+            timestamp_ms,
+            repository: self.repository.clone(),
+            provider: self.provider.clone(),
+            item_count,
+            token_count,
+            redactions: redactions as u64,
+        };
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.path)?;
+        serde_json::to_writer(&mut file, &entry)
+            .map_err(|error| std::io::Error::other(error.to_string()))?;
+        file.write_all(b"\n")?;
+        Ok(entry)
+    }
+}
+
 /// Blocking OpenRouter Decisions API client (spec.md section 18:
 /// provider-neutral interface implemented for OpenRouter).
 pub struct OpenRouterProvider {
@@ -61,10 +152,14 @@ pub struct OpenRouterProvider {
     model: String,
     max_retries: u32,
     backoff: Duration,
+    privacy: PrivacyConfig,
+    audit: Option<RemoteAuditLog>,
 }
 
 impl OpenRouterProvider {
     /// Builds a client with an explicit API key (tests, custom loaders).
+    /// This explicit constructor enables remote decisions; manifest-driven
+    /// callers should use [`Self::from_config_with_privacy`].
     pub fn new(
         endpoint: impl Into<String>,
         model: impl Into<String>,
@@ -72,6 +167,35 @@ impl OpenRouterProvider {
         timeout: Duration,
         max_retries: u32,
     ) -> Result<Self, ProviderError> {
+        Self::new_with_privacy(
+            endpoint,
+            model,
+            api_key,
+            timeout,
+            max_retries,
+            PrivacyConfig {
+                remote_decisions: true,
+                ..PrivacyConfig::default()
+            },
+            None,
+        )
+    }
+
+    /// Builds a client with an explicit privacy policy and optional audit log.
+    pub fn new_with_privacy(
+        endpoint: impl Into<String>,
+        model: impl Into<String>,
+        api_key: impl Into<String>,
+        timeout: Duration,
+        max_retries: u32,
+        privacy: PrivacyConfig,
+        audit: Option<RemoteAuditLog>,
+    ) -> Result<Self, ProviderError> {
+        if !privacy.remote_decisions {
+            return Err(ProviderError::Privacy {
+                detail: "remote decisions are disabled by privacy policy".to_string(),
+            });
+        }
         let endpoint = endpoint.into();
         if !endpoint.starts_with("http://") && !endpoint.starts_with("https://") {
             return Err(ProviderError::Config {
@@ -98,33 +222,74 @@ impl OpenRouterProvider {
             model: model.into(),
             max_retries,
             backoff: Duration::from_millis(250),
+            privacy,
+            audit,
         })
     }
 
     /// Builds a client from manifest configuration, reading the API key
-    /// from the configured environment variable name (todo.md: API key
-    /// configuration; `docs/decisions.md` section 5: keys are never
-    /// stored in the manifest).
+    /// from the configured environment variable name. This compatibility
+    /// constructor explicitly enables remote decisions; new integrations
+    /// should pass the manifest's privacy policy to
+    /// [`Self::from_config_with_privacy`].
     pub fn from_config(jev: &JevConfig, provider: &ProviderConfig) -> Result<Self, ProviderError> {
+        Self::from_config_with_privacy(
+            jev,
+            provider,
+            &PrivacyConfig {
+                remote_decisions: true,
+                ..PrivacyConfig::default()
+            },
+            None,
+        )
+    }
+
+    /// Builds a client from manifest configuration and privacy policy.
+    pub fn from_config_with_privacy(
+        jev: &JevConfig,
+        provider: &ProviderConfig,
+        privacy: &PrivacyConfig,
+        audit: Option<RemoteAuditLog>,
+    ) -> Result<Self, ProviderError> {
         jev.validate().map_err(|err| ProviderError::Config {
             detail: err.to_string(),
         })?;
         provider.validate().map_err(|err| ProviderError::Config {
             detail: err.to_string(),
         })?;
+        if !privacy.remote_decisions {
+            return Err(ProviderError::Privacy {
+                detail: "remote decisions are disabled by privacy policy".to_string(),
+            });
+        }
         let api_key = std::env::var(&provider.api_key_env)
             .ok()
             .filter(|key| !key.trim().is_empty())
             .ok_or_else(|| ProviderError::MissingApiKey {
                 env: provider.api_key_env.clone(),
             })?;
-        Self::new(
+        Self::new_with_privacy(
             provider.endpoint.clone(),
             jev.model.clone(),
             api_key,
             Duration::from_millis(jev.timeout_ms),
             jev.max_retries,
+            privacy.clone(),
+            audit,
         )
+    }
+
+    /// Builds a client from manifest configuration and installs the standard
+    /// content-free audit log for `repository_root`.
+    pub fn from_manifest(
+        jev: &JevConfig,
+        provider: &ProviderConfig,
+        privacy: &PrivacyConfig,
+        repository_root: &Path,
+        repository: &str,
+    ) -> Result<Self, ProviderError> {
+        let audit = RemoteAuditLog::for_repository(repository_root, repository, &provider.name);
+        Self::from_config_with_privacy(jev, provider, privacy, Some(audit))
     }
 
     /// Overrides the retry backoff (tests use zero).
@@ -136,6 +301,27 @@ impl OpenRouterProvider {
     /// The configured model id (e.g. `typesafe/jev-1.13`).
     pub fn model(&self) -> &str {
         &self.model
+    }
+
+    /// Returns a copy of `request` safe for a remote provider.
+    pub fn redact_request(&self, request: &DecisionRequest) -> (DecisionRequest, usize) {
+        let question = self.privacy.redact(&request.question);
+        let context = self.privacy.redact(&request.context);
+        let mut choices = Vec::with_capacity(request.choices.len());
+        let mut redactions = question.count() + context.count();
+        for choice in &request.choices {
+            let redacted = self.privacy.redact(choice);
+            redactions += redacted.count();
+            choices.push(redacted.text);
+        }
+        (
+            DecisionRequest {
+                question: question.text,
+                choices,
+                context: context.text,
+            },
+            redactions,
+        )
     }
 
     /// Builds the Decisions API request body for one choice question.
@@ -238,7 +424,27 @@ impl DecisionProvider for OpenRouterProvider {
     }
 
     fn decide(&self, request: &DecisionRequest) -> Result<DecisionOutcome, ProviderError> {
-        let body = Self::request_body(request, &self.model);
+        if !self.privacy.remote_decisions {
+            return Err(ProviderError::Privacy {
+                detail: "remote decisions are disabled by privacy policy".to_string(),
+            });
+        }
+        let (safe_request, redactions) = self.redact_request(request);
+        if let Some(audit) = &self.audit {
+            let material = format!(
+                "{}\n{}\n{}",
+                safe_request.question,
+                safe_request.context,
+                safe_request.choices.join("\n")
+            );
+            let token_count = material.chars().count().div_ceil(4) as u64;
+            audit
+                .record(1, token_count, redactions)
+                .map_err(|error| ProviderError::Privacy {
+                    detail: format!("remote audit failed: {error}"),
+                })?;
+        }
+        let body = Self::request_body(&safe_request, &self.model);
         let mut attempts = 0u32;
 
         loop {

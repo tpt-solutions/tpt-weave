@@ -245,6 +245,9 @@ pub struct PrivacyConfig {
     /// (`.env`), directory (`secrets/`), extension (`*.pem`), prefix
     /// (`id_rsa*`). See `docs/decisions.md` section 5.
     pub exclude: Vec<String>,
+    /// Additional private path patterns. These may be absolute paths or
+    /// repository-relative prefixes and are excluded in addition to `exclude`.
+    pub private_paths: Vec<String>,
 }
 
 impl Default for PrivacyConfig {
@@ -265,49 +268,74 @@ impl Default for PrivacyConfig {
             .iter()
             .map(ToString::to_string)
             .collect(),
+            private_paths: Vec::new(),
         }
     }
 }
 
 impl PrivacyConfig {
-    /// Validates exclusion patterns.
+    /// Validates exclusion and private-path patterns.
     pub fn validate(&self) -> Result<(), ConfigError> {
         if self.exclude.iter().any(String::is_empty) {
             return Err(ConfigError::Invalid(
                 "`privacy.exclude` must not contain empty patterns".to_string(),
             ));
         }
+        if self.private_paths.iter().any(String::is_empty) {
+            return Err(ConfigError::Invalid(
+                "`privacy.private_paths` must not contain empty patterns".to_string(),
+            ));
+        }
         Ok(())
     }
 
-    /// Returns `true` when `rel_path` matches an exclusion pattern.
+    /// Returns `true` when `rel_path` matches an exclusion or private-path
+    /// pattern.
     pub fn is_excluded(&self, rel_path: &str) -> bool {
         let path = rel_path.replace('\\', "/");
         self.exclude
             .iter()
             .any(|pattern| matches_pattern(pattern, &path))
+            || self
+                .private_paths
+                .iter()
+                .any(|pattern| matches_private_path(pattern, &path))
+    }
+
+    /// Returns `true` when an absolute or relative path is private.
+    pub fn is_private_path(&self, path: &str) -> bool {
+        self.is_excluded(path)
     }
 }
 
-/// Glob-lite matcher for the four supported pattern forms.
+/// Glob-lite matcher for the four supported exclusion forms.
 fn matches_pattern(pattern: &str, path: &str) -> bool {
     if pattern.is_empty() {
         return false;
     }
     if let Some(directory) = pattern.strip_suffix('/') {
-        // `dir/` — any path containing a directory component named `dir`.
         return path.split('/').any(|segment| segment == directory);
     }
     if let Some(extension) = pattern.strip_prefix("*.") {
-        // `*.ext` — any path with that extension.
         return path.ends_with(&format!(".{extension}"));
     }
     if let Some(prefix) = pattern.strip_suffix('*') {
-        // `prefix*` — any path component starting with `prefix`.
         return path.split('/').any(|segment| segment.starts_with(prefix));
     }
-    // Exact — any path component equal to the pattern.
     path.split('/').any(|segment| segment == pattern)
+}
+
+fn matches_private_path(pattern: &str, path: &str) -> bool {
+    let pattern = pattern.replace('\\', "/").trim_end_matches('/').to_string();
+    if pattern.is_empty() {
+        return false;
+    }
+    let path = path.replace('\\', "/");
+    if pattern.contains('/') {
+        path == pattern || path.starts_with(&format!("{pattern}/"))
+    } else {
+        path.split('/').any(|segment| segment == pattern)
+    }
 }
 
 /// JEv decision settings (spec.md sections 4 and 4.3, todo.md Phase 8).

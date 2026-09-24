@@ -1,7 +1,7 @@
 //! Phase 9 workspace load + tool dispatch tests (todo.md Phase 9).
 
 use serde_json::json;
-use tpt_weave_mcp::{ToolError, ToolFilter, Workspace, all_tools};
+use tpt_weave_mcp::{ToolError, ToolFilter, Workspace, all_tools, benchmark_tool};
 
 fn repo_root() -> std::path::PathBuf {
     // crates/tpt-weave-mcp -> workspace root
@@ -22,6 +22,15 @@ fn load_workspace_on_this_repo() {
     assert!(!ws.graph().symbols.is_empty(), "graph has symbols");
     assert_eq!(ws.repository_name(), "tpt-weave");
     assert!(ws.root().ends_with("tpt-weave"));
+}
+
+#[test]
+fn benchmark_tool_dispatch_records_rounds() {
+    let ws = load();
+    let result = benchmark_tool(&ws, "tpt_repo_overview", &json!({}), 2);
+    assert_eq!(result.rounds, 2);
+    assert_eq!(result.errors, 0);
+    assert!(result.mean_ms >= 0.0);
 }
 
 #[test]
