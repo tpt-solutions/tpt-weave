@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 use tpt_weave_context::{LazySources, SourceProvider};
-use tpt_weave_core::{Manifest, PrivacyConfig, Revision, manifest_path};
+use tpt_weave_core::{Manifest, PrivacyConfig, Revision, hash::fnv1a64_hex, manifest_path};
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph, graph_path};
 use tpt_weave_index::{CargoIndex, GitRepository};
 use tpt_weave_rust::{ParseCache, ParseFileInput};
@@ -48,6 +48,7 @@ pub struct Workspace {
     sources: LazySources,
     git: Option<GitRepository>,
     repository_name: String,
+    worktree_state: String,
 }
 
 impl Workspace {
@@ -78,6 +79,7 @@ impl Workspace {
                 .map_err(|e| WorkspaceError::Git(e.to_string()))?,
             None => Revision::new(NO_REVISION),
         };
+        let worktree_state = worktree_state(&root, git.as_ref())?;
         let cargo = CargoIndex::load(&root).map_err(|e| WorkspaceError::Index(e.to_string()))?;
         let previous_graph = RepositoryGraph::load(&graph_path(&root)).ok();
         let sources = LazySources::open_with_privacy(&root, &privacy)
@@ -125,6 +127,7 @@ impl Workspace {
             sources,
             git,
             repository_name,
+            worktree_state,
         })
     }
 
@@ -164,19 +167,36 @@ impl Workspace {
         }
     }
 
-    /// Rebuilds the graph/sources when HEAD moved since load
-    /// (conservative revision invalidation). Returns `true` when rebuilt.
+    /// Rebuilds the graph/sources when HEAD or the working-tree status changed
+    /// since load. Returns `true` when rebuilt. The status fingerprint avoids
+    /// rebuilding for every tool call while the tree remains dirty.
     pub fn refresh_if_stale(&mut self) -> Result<bool, WorkspaceError> {
         let Some(current) = self.current_revision()? else {
             return Ok(false);
         };
-        if current.sha == self.graph.revision.sha {
+        let current_worktree = worktree_state(&self.root, self.git.as_ref())?;
+        if current.sha == self.graph.revision.sha && current_worktree == self.worktree_state {
             return Ok(false);
         }
         let rebuilt = Self::load(&self.root)?;
         *self = rebuilt;
         Ok(true)
     }
+}
+
+fn worktree_state(root: &Path, git: Option<&GitRepository>) -> Result<String, WorkspaceError> {
+    let git_state = git
+        .map(|repo| {
+            repo.worktree_fingerprint()
+                .map_err(|error| WorkspaceError::Git(error.to_string()))
+        })
+        .transpose()?
+        .unwrap_or_else(|| "non-git".to_string());
+    let manifest = std::fs::read(manifest_path(root)).unwrap_or_default();
+    let mut material = git_state.into_bytes();
+    material.push(0xff);
+    material.extend_from_slice(&manifest);
+    Ok(fnv1a64_hex(&material))
 }
 
 /// Collects `.rs` files under `package_root`, keyed by path relative to

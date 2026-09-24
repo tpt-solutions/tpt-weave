@@ -5,9 +5,10 @@
 //! status, the current diff, changed-file queries and history lookup.
 
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tpt_weave_core::Revision;
+use tpt_weave_core::{Revision, hash::fnv1a64_hex};
 
 /// Errors from git operations.
 #[derive(Debug)]
@@ -170,6 +171,53 @@ impl GitRepository {
             });
         }
         Ok(entries)
+    }
+
+    /// Content-aware fingerprint of the current working tree.
+    ///
+    /// Unlike [`Self::status`], this changes when an already-modified file is
+    /// edited again. It includes the staged/unstaged diff and the contents of
+    /// untracked files, then returns only a digest.
+    pub fn worktree_fingerprint(&self) -> Result<String, GitError> {
+        let status = self.status()?;
+        if status.is_empty() {
+            return Ok("clean".to_string());
+        }
+        let diff = git_stdout(
+            &self.root,
+            &["-c", "core.quotepath=false", "diff", "--binary", "HEAD"],
+        )?;
+        let untracked = git_stdout(
+            &self.root,
+            &["ls-files", "--others", "--exclude-standard", "-z"],
+        )?;
+        let mut status_lines: Vec<String> = status
+            .iter()
+            .map(|entry| {
+                format!(
+                    "{}\u{1f}{:?}\u{1f}{}\u{1f}{}\u{1f}{}",
+                    entry.path,
+                    entry.status,
+                    entry.old_path.as_deref().unwrap_or(""),
+                    entry.staged,
+                    entry.unstaged
+                )
+            })
+            .collect();
+        status_lines.sort();
+
+        let mut material = Vec::new();
+        material.extend_from_slice(status_lines.join("\n").as_bytes());
+        material.push(0xff);
+        material.extend_from_slice(diff.as_bytes());
+        material.push(0xff);
+        for path in untracked.split('\0').filter(|path| !path.is_empty()) {
+            material.extend_from_slice(path.as_bytes());
+            material.push(0xff);
+            material.extend_from_slice(&fs::read(self.root.join(path))?);
+            material.push(0xff);
+        }
+        Ok(fnv1a64_hex(&material))
     }
 
     /// Tracked files whose content differs from HEAD (staged or unstaged).

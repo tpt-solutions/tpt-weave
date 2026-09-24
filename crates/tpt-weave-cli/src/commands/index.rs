@@ -14,15 +14,24 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
     let started = Instant::now();
 
     if !full && path.exists() {
-        // Reuse the on-disk graph when HEAD still matches (conservative
-        // invalidation); otherwise rebuild.
+        // Reuse the on-disk graph only when HEAD and the working tree are
+        // unchanged. Uncommitted source edits must enter the incremental path;
+        // non-git trees have no reliable HEAD, so rebuild conservatively.
         if let Ok(existing) = tpt_weave_graph::RepositoryGraph::load(&path) {
             let head_ok = tpt_weave_index::GitRepository::discover(&root)
                 .ok()
-                .and_then(|git| git.current_revision().ok())
-                .map(|rev| rev.sha == existing.revision.sha)
-                .unwrap_or(true);
-            if head_ok {
+                .map(|git| {
+                    git.current_revision()
+                        .map(|rev| rev.sha == existing.revision.sha)
+                        .unwrap_or(false)
+                        && git
+                            .status()
+                            .map(|status| status.is_empty())
+                            .unwrap_or(false)
+                })
+                .unwrap_or(false);
+            let manifest_ok = !Workspace::manifest_newer_than_graph(&root, &path);
+            if head_ok && manifest_ok {
                 let symbols = existing.symbols.len();
                 let files = {
                     let mut paths: Vec<&str> =

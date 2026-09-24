@@ -89,6 +89,10 @@ fn reports_modifications_diff_and_history() {
         .find(|s| s.path == "new.txt")
         .expect("untracked entry");
     assert_eq!(untracked.status, ChangeStatus::Untracked);
+    let first_fingerprint = repo.worktree_fingerprint().expect("fingerprint");
+    fs::write(dir.join("file.txt"), "three\n").unwrap();
+    let second_fingerprint = repo.worktree_fingerprint().expect("fingerprint after edit");
+    assert_ne!(first_fingerprint, second_fingerprint);
 
     // Changed-file query: tracked content changes vs HEAD only.
     assert_eq!(repo.changed_files().expect("changed_files"), ["file.txt"]);

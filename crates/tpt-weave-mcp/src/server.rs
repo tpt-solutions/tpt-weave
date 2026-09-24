@@ -114,7 +114,8 @@ impl ServerHandler for TptWeaveServer {
             }
 
             let outcome = self.with_workspace(|ws| {
-                // Conservative invalidation: rebuild when HEAD moved (spec §21).
+                // Conservative invalidation: rebuild when HEAD or the
+                // working-tree fingerprint changed (spec §21).
                 let refresh = ws.refresh_if_stale().map(|_| ());
                 match refresh {
                     Ok(()) => ws.call_tool(&name, &args),

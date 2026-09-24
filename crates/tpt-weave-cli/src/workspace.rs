@@ -34,6 +34,23 @@ impl Workspace {
             .map_err(|e| CliError::internal(format!("{}: {e}", root.display())))
     }
 
+    /// Returns `true` when the local manifest is newer than the persisted
+    /// graph. Manifest changes can alter privacy exclusions even when Git
+    /// reports a clean tree.
+    pub fn manifest_newer_than_graph(root: &Path, graph_path: &Path) -> bool {
+        let Ok(manifest) = manifest_path(root).metadata() else {
+            return false;
+        };
+        let Ok(graph) = graph_path.metadata() else {
+            return false;
+        };
+        manifest
+            .modified()
+            .ok()
+            .zip(graph.modified().ok())
+            .is_some_and(|(manifest_time, graph_time)| manifest_time > graph_time)
+    }
+
     /// Loads (and rebuilds) the graph from the working tree. Used by
     /// `index` / `adopt`.
     pub fn build(root: impl AsRef<Path>) -> Result<Self, CliError> {
@@ -134,6 +151,11 @@ impl Workspace {
         if !path.exists() {
             return Err(CliError::stale(
                 "no index found; run `tpt-weave index` (or `tpt-weave adopt`)",
+            ));
+        }
+        if Self::manifest_newer_than_graph(&root, &path) {
+            return Err(CliError::stale(
+                "manifest changed since index; re-run `tpt-weave index`",
             ));
         }
         let graph = RepositoryGraph::load(&path)?;

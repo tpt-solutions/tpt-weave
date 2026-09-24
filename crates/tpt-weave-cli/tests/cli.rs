@@ -142,6 +142,36 @@ fn index_and_overview_human_json_compact() {
 }
 
 #[test]
+fn index_rebuilds_uncommitted_edits_and_reuses_parse_cache() {
+    let dir = fixture();
+    let (code, _, stderr) = cli(&dir, &["init"]);
+    assert_eq!(code, 0, "{stderr}");
+    let (code, first_raw, stderr) = cli(&dir, &["--json", "index"]);
+    assert_eq!(code, 0, "{stderr}");
+    let first: serde_json::Value = serde_json::from_str(&first_raw).expect("first index json");
+    assert_eq!(first["rebuilt"], true);
+    assert_eq!(first["parse_cache"]["misses"], 1);
+
+    fs::write(
+        dir.join("src").join("lib.rs"),
+        "pub fn changed() -> i32 { 2 }\n",
+    )
+    .expect("rewrite source");
+    let (code, changed_raw, stderr) = cli(&dir, &["--json", "index"]);
+    assert_eq!(code, 0, "{stderr}");
+    let changed: serde_json::Value =
+        serde_json::from_str(&changed_raw).expect("changed index json");
+    assert_eq!(changed["rebuilt"], true);
+    assert_eq!(changed["parse_cache"]["misses"], 1);
+
+    let (code, cached_raw, stderr) = cli(&dir, &["--json", "index"]);
+    assert_eq!(code, 0, "{stderr}");
+    let cached: serde_json::Value = serde_json::from_str(&cached_raw).expect("cached index json");
+    assert_eq!(cached["rebuilt"], true);
+    assert_eq!(cached["parse_cache"]["hits"], 1);
+}
+
+#[test]
 fn symbol_lookup_not_found_exits_3() {
     let dir = fixture();
     cli(&dir, &["init"]);
