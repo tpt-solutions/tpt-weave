@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "MCP server exposing tpt-weave context tools"
+readme = "README.md"
+keywords = ["mcp", "ai", "llm", "server", "agents"]
+categories = ["development-tools", "command-line-utilities"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

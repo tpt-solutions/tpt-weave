@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Repository symbol graph (symbols, modules, crates, references) for tpt-weave"
+readme = "README.md"
+keywords = ["graph", "symbols", "references", "code-intelligence", "rust"]
+categories = ["development-tools", "data-structures"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

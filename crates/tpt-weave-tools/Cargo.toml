@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Deterministic tool-output reduction for tpt-weave"
+readme = "README.md"
+keywords = ["cargo", "git", "logs", "llm", "token-reduction"]
+categories = ["development-tools", "text-processing"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

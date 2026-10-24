@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "tpt-weave evaluation harness: captures, metrics and reports (spec §23)"
+readme = "README.md"
+keywords = ["benchmark", "evaluation", "llm", "metrics", "tokens"]
+categories = ["development-tools", "development-tools::profiling"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

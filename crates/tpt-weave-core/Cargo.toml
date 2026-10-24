@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Core repository model types, token accounting and manifest configuration for tpt-weave"
+readme = "README.md"
+keywords = ["ai", "llm", "context", "tokens", "configuration"]
+categories = ["development-tools", "config"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes before security/perf review.
 publish = false
 

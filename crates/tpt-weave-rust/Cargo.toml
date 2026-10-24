@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Rust source extraction via syn for tpt-weave"
+readme = "README.md"
+keywords = ["rust", "syn", "parser", "ast", "symbols"]
+categories = ["parser-implementations", "development-tools"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

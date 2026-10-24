@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Filesystem cache with conservative invalidation for tpt-weave"
+readme = "README.md"
+keywords = ["cache", "invalidation", "filesystem", "incremental", "ai"]
+categories = ["caching", "filesystem"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

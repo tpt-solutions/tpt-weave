@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "tpt-weave command-line interface"
+readme = "README.md"
+keywords = ["cli", "ai", "llm", "context", "rust"]
+categories = ["command-line-utilities", "development-tools"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

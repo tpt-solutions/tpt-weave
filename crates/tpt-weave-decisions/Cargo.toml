@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Decision provider abstraction, JEv categories and policy for tpt-weave"
+readme = "README.md"
+keywords = ["llm", "decisions", "policy", "ai", "fallback"]
+categories = ["development-tools", "algorithms"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

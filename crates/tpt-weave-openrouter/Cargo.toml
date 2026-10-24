@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "OpenRouter Decisions API (JEv) client for tpt-weave"
+readme = "README.md"
+keywords = ["openrouter", "llm", "ai", "api-client", "jev"]
+categories = ["api-bindings", "development-tools"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 

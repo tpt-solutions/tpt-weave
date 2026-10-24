@@ -9,6 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
 description = "Hierarchical context representations and expansion for tpt-weave"
+readme = "README.md"
+keywords = ["ai", "llm", "context", "retrieval", "tokens"]
+categories = ["development-tools", "algorithms"]
 # Publication happens in Phase 20 (todo.md); prevent accidental publishes.
 publish = false
 
