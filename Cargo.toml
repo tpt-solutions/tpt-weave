@@ -23,7 +23,7 @@ rust-version = "1.85"
 repository = "https://github.com/tpt-solutions/tpt-weave"
 homepage = "https://github.com/tpt-solutions/tpt-weave"
 documentation = "https://docs.rs/tpt-weave"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 authors = ["TPT Solutions"]
 
 [workspace.dependencies]

@@ -61,4 +61,4 @@ experimental APIs are gated behind the `unstable` feature where present (see
 
 ## License
 
-MIT - see [LICENSE](../../LICENSE).
+Licensed under either of [Apache License, Version 2.0](../../LICENSE-APACHE) or [MIT license](../../LICENSE-MIT), at your option.

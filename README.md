@@ -106,4 +106,4 @@ See [docs/using-tpt-weave.md](docs/using-tpt-weave.md) for the full setup guide 
 - **MSRV:** Rust 1.85 (edition 2024) for the library crates, enforced via `rust-version` in the workspace manifest
 - **MCP server:** requires Rust 1.88 or newer because `rmcp` 3.x does; `tpt-weave-mcp` is excluded from the MSRV CI job
 - **Edition:** 2024
-- **License:** MIT (see [LICENSE](LICENSE))
+- **License:** MIT OR Apache-2.0 (see [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE))

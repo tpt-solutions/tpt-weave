@@ -2,7 +2,7 @@ tpt-weave — Design Specification
 
 Status: Proposed
 Language: Rust
-License: MIT
+License: MIT OR Apache-2.0
 Repository: tpt-weave
 Purpose: Cross-repository AI context optimisation for the TPT Solutions ecosystem.
 
