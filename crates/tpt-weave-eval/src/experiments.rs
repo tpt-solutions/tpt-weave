@@ -156,8 +156,9 @@ impl ExperimentSuite {
                     case.variant
                 )));
             }
-            if let Some(accuracy) = case.accuracy
-                && (!accuracy.is_finite() || !(0.0..=1.0).contains(&accuracy))
+            if case
+                .accuracy
+                .is_some_and(|accuracy| !accuracy.is_finite() || !(0.0..=1.0).contains(&accuracy))
             {
                 return Err(ExperimentReportError::Invalid(format!(
                     "accuracy for `{}` must be finite and in [0, 1]",

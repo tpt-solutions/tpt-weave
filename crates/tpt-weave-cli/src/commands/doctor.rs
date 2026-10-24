@@ -96,10 +96,9 @@ pub fn run(cli: &Cli) -> Result<Rendered, CliError> {
         match RepositoryGraph::load(&graph_path) {
             Ok(graph) => {
                 let mut ok = true;
-                let mut detail = format!("schema {} @ {}", graph.schema, graph.revision.short());
                 if graph.schema != SCHEMA_VERSION {
                     ok = false;
-                    detail = format!(
+                    let detail = format!(
                         "schema {} != expected {SCHEMA_VERSION}; re-run `tpt-weave index`",
                         graph.schema
                     );
