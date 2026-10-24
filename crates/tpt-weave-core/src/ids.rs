@@ -102,9 +102,10 @@ pub enum SymbolKind {
     Macro,
 }
 
-impl fmt::Display for SymbolKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = match self {
+impl SymbolKind {
+    /// Short stable name used in canonical keys (`#fn`, `#struct`, ...).
+    pub fn as_str(&self) -> &'static str {
+        match self {
             SymbolKind::Module => "module",
             SymbolKind::Struct => "struct",
             SymbolKind::Enum => "enum",
@@ -115,8 +116,13 @@ impl fmt::Display for SymbolKind {
             SymbolKind::Constant => "const",
             SymbolKind::TypeAlias => "type",
             SymbolKind::Macro => "macro",
-        };
-        f.write_str(name)
+        }
+    }
+}
+
+impl fmt::Display for SymbolKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -147,8 +153,41 @@ impl SymbolId {
         key.push_str("::");
         key.push_str(&self.name);
         key.push('#');
-        key.push_str(&self.kind.to_string());
+        key.push_str(self.kind.as_str());
         key
+    }
+
+    /// Allocation-free equivalent of `self.canonical_key() == key`.
+    ///
+    /// Symbol-table scans compare every record against a key; building the
+    /// canonical string for each comparison dominated context retrieval.
+    pub fn matches_key(&self, key: &str) -> bool {
+        let Some(rest) = key.strip_prefix(self.repository.as_str()) else {
+            return false;
+        };
+        let Some(rest) = rest.strip_prefix('/') else {
+            return false;
+        };
+        let Some(mut rest) = rest.strip_prefix(self.package.as_str()) else {
+            return false;
+        };
+        if !self.module.is_empty() {
+            let Some(after) = rest
+                .strip_prefix("::")
+                .and_then(|r| r.strip_prefix(self.module.as_str()))
+            else {
+                return false;
+            };
+            rest = after;
+        }
+        let Some(after) = rest
+            .strip_prefix("::")
+            .and_then(|r| r.strip_prefix(self.name.as_str()))
+            .and_then(|r| r.strip_prefix('#'))
+        else {
+            return false;
+        };
+        after == self.kind.as_str()
     }
 }
 
@@ -242,6 +281,58 @@ mod tests {
             kind: SymbolKind::Module,
         };
         assert_eq!(root.canonical_key(), "tpt-cv/tpt-cv::prelude#module");
+    }
+
+    #[test]
+    fn matches_key_agrees_with_canonical_key() {
+        let symbols = [
+            SymbolId {
+                repository: RepositoryId::new("tpt-cv"),
+                package: "tpt-cv".into(),
+                module: "image::resample".into(),
+                name: "resample".into(),
+                kind: SymbolKind::Function,
+            },
+            SymbolId {
+                repository: RepositoryId::new("tpt-cv"),
+                package: "tpt-cv".into(),
+                module: String::new(),
+                name: "prelude".into(),
+                kind: SymbolKind::Module,
+            },
+            SymbolId {
+                repository: RepositoryId::new("a"),
+                package: "b".into(),
+                module: "c".into(),
+                name: "Type::method".into(),
+                kind: SymbolKind::Method,
+            },
+        ];
+        let probes = [
+            "tpt-cv/tpt-cv::image::resample::resample#fn",
+            "tpt-cv/tpt-cv::image::resample::resample#method",
+            "tpt-cv/tpt-cv::image::resample::resample#",
+            "tpt-cv/tpt-cv::image::resample::resample",
+            "tpt-cv/tpt-cv::image::resample::resample#fn ",
+            "tpt-cv/tpt-cv::prelude#module",
+            "tpt-cv/tpt-cv::prelude#modul",
+            "tpt-cv/tpt-cv#module",
+            "tpt-cv/tpt-cv::::prelude#module",
+            "a/b::c::Type::method#method",
+            "a/b::c::Type#method",
+            "",
+        ];
+        for symbol in &symbols {
+            let canonical = symbol.canonical_key();
+            assert!(symbol.matches_key(&canonical), "{canonical}");
+            for probe in probes.iter().copied().chain([canonical.as_str()]) {
+                assert_eq!(
+                    symbol.matches_key(probe),
+                    symbol.canonical_key() == probe,
+                    "probe {probe:?} against {canonical}"
+                );
+            }
+        }
     }
 
     #[test]

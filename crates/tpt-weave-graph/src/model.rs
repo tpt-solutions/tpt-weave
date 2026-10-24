@@ -102,7 +102,7 @@ pub struct RepositoryGraph {
 impl RepositoryGraph {
     /// Symbol-table lookup by canonical key.
     pub fn symbol(&self, key: &str) -> Option<&SymbolRecord> {
-        self.symbols.iter().find(|s| s.id.canonical_key() == key)
+        self.symbols.iter().find(|s| s.id.matches_key(key))
     }
 
     /// All symbols whose id equals this exact name (methods are

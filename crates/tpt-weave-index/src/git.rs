@@ -187,10 +187,14 @@ impl GitRepository {
             &self.root,
             &["-c", "core.quotepath=false", "diff", "--binary", "HEAD"],
         )?;
-        let untracked = git_stdout(
-            &self.root,
-            &["ls-files", "--others", "--exclude-standard", "-z"],
-        )?;
+        // `status` already lists every untracked file (`-uall`), so no separate
+        // `ls-files` process is needed.
+        let mut untracked: Vec<&str> = status
+            .iter()
+            .filter(|entry| entry.status == ChangeStatus::Untracked)
+            .map(|entry| entry.path.as_str())
+            .collect();
+        untracked.sort_unstable();
         let mut status_lines: Vec<String> = status
             .iter()
             .map(|entry| {
@@ -211,12 +215,22 @@ impl GitRepository {
         material.push(0xff);
         material.extend_from_slice(diff.as_bytes());
         material.push(0xff);
-        for path in untracked.split('\0').filter(|path| !path.is_empty()) {
+        for path in untracked {
             material.extend_from_slice(path.as_bytes());
             material.push(0xff);
             material.extend_from_slice(&fs::read(self.root.join(path))?);
             material.push(0xff);
         }
+        Ok(fnv1a64_hex(&material))
+    }
+
+    /// Digest of the working-tree fingerprint and the manifest bytes. Equal
+    /// digests mean the same sources and privacy settings were in effect, so
+    /// a graph built under one digest can be reused under the same digest.
+    pub fn worktree_state(&self, manifest: &[u8]) -> Result<String, GitError> {
+        let mut material = self.worktree_fingerprint()?.into_bytes();
+        material.push(0xff);
+        material.extend_from_slice(manifest);
         Ok(fnv1a64_hex(&material))
     }
 

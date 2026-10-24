@@ -12,11 +12,14 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
     let root = Workspace::canonical_root(&cli.path)?;
     let path = graph_path(&root);
     let started = Instant::now();
+    // Taken before any source is read, so an edit made during a rebuild is
+    // never recorded as already indexed. `None` outside git: no reliable
+    // baseline, so the graph is rebuilt conservatively.
+    let worktree_state = Workspace::worktree_state(&root);
 
     if !full && path.exists() {
-        // Reuse the on-disk graph only when HEAD and the working tree are
-        // unchanged. Uncommitted source edits must enter the incremental path;
-        // non-git trees have no reliable HEAD, so rebuild conservatively.
+        // Reuse the on-disk graph only when HEAD, the working-tree state
+        // (uncommitted edits and manifest) and the manifest are all unchanged.
         if let Ok(existing) = tpt_weave_graph::RepositoryGraph::load(&path) {
             let head_ok = tpt_weave_index::GitRepository::discover(&root)
                 .ok()
@@ -24,14 +27,12 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
                     git.current_revision()
                         .map(|rev| rev.sha == existing.revision.sha)
                         .unwrap_or(false)
-                        && git
-                            .status()
-                            .map(|status| status.is_empty())
-                            .unwrap_or(false)
                 })
                 .unwrap_or(false);
+            let state_ok = worktree_state.is_some()
+                && Workspace::saved_worktree_state(&root) == worktree_state;
             let manifest_ok = !Workspace::manifest_newer_than_graph(&root, &path);
-            if head_ok && manifest_ok {
+            if head_ok && state_ok && manifest_ok {
                 let symbols = existing.symbols.len();
                 let files = {
                     let mut paths: Vec<&str> =
@@ -61,7 +62,8 @@ pub fn run(cli: &Cli, full: bool) -> Result<Rendered, CliError> {
         }
     }
 
-    let workspace = Workspace::index_and_save(&root)?;
+    let workspace = Workspace::build_with_state(root.clone(), worktree_state)?;
+    workspace.save_index()?;
     let elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
     let graph = workspace.graph();
     let parse_cache = workspace.parse_cache_stats();

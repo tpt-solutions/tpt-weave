@@ -94,6 +94,15 @@ fn reports_modifications_diff_and_history() {
     let second_fingerprint = repo.worktree_fingerprint().expect("fingerprint after edit");
     assert_ne!(first_fingerprint, second_fingerprint);
 
+    // The state digest folds in the manifest, so a manifest change alone (same
+    // working tree) must change it, and identical inputs must match.
+    let state = repo.worktree_state(b"[repository]").expect("state");
+    assert_eq!(state, repo.worktree_state(b"[repository]").unwrap());
+    assert_ne!(
+        state,
+        repo.worktree_state(b"[repository]\nprivacy = 1").unwrap()
+    );
+
     // Changed-file query: tracked content changes vs HEAD only.
     assert_eq!(repo.changed_files().expect("changed_files"), ["file.txt"]);
     let diff = repo.diff().expect("diff");

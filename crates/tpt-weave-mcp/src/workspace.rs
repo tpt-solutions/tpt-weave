@@ -203,18 +203,13 @@ impl Workspace {
 }
 
 fn worktree_state(root: &Path, git: Option<&GitRepository>) -> Result<String, WorkspaceError> {
-    let git_state = git
-        .map(|repo| {
-            repo.worktree_fingerprint()
-                .map_err(|error| WorkspaceError::Git(error.to_string()))
-        })
-        .transpose()?
-        .unwrap_or_else(|| "non-git".to_string());
     let manifest = std::fs::read(manifest_path(root)).unwrap_or_default();
-    let mut material = git_state.into_bytes();
-    material.push(0xff);
-    material.extend_from_slice(&manifest);
-    Ok(fnv1a64_hex(&material))
+    match git {
+        Some(repo) => repo
+            .worktree_state(&manifest)
+            .map_err(|error| WorkspaceError::Git(error.to_string())),
+        None => Ok(format!("non-git:{}", fnv1a64_hex(&manifest))),
+    }
 }
 
 /// Collects `.rs` files under `package_root`, keyed by path relative to

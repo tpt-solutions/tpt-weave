@@ -5,7 +5,8 @@
 use std::path::{Path, PathBuf};
 use tpt_weave_context::{LazySources, SourceProvider};
 use tpt_weave_core::{
-    Manifest, PrivacyConfig, RepositoryRegistry, Revision, discover_repository_root, manifest_path,
+    MANIFEST_DIR, Manifest, PrivacyConfig, RepositoryRegistry, Revision, discover_repository_root,
+    manifest_path,
 };
 use tpt_weave_graph::{GraphBuilder, RepositoryGraph, graph_path};
 use tpt_weave_index::{CargoIndex, GitRepository};
@@ -27,12 +28,42 @@ pub struct Workspace {
     repository_name: String,
     parse_cache: ParseCacheStats,
     registry: Option<RepositoryRegistry>,
+    /// Working-tree state the graph was built from (see
+    /// [`Workspace::worktree_state`]); persisted by [`Workspace::save_index`].
+    worktree_state: Option<String>,
 }
+
+/// Sidecar file beside `graph.json` holding the working-tree state the graph
+/// was built from. Kept separate so the graph schema does not change.
+pub const WORKTREE_STATE_FILE: &str = "worktree-state";
 
 impl Workspace {
     /// Canonicalises `root` for path-based commands.
     pub fn canonical_root(root: impl AsRef<Path>) -> Result<PathBuf, CliError> {
         discover_repository_root(root).map_err(Into::into)
+    }
+
+    /// Path of the persisted working-tree state for a repository root.
+    pub fn worktree_state_path(root: &Path) -> PathBuf {
+        root.join(MANIFEST_DIR).join(WORKTREE_STATE_FILE)
+    }
+
+    /// Content-aware digest of the uncommitted tree plus the manifest, or
+    /// `None` outside git (no reliable baseline, so the graph must rebuild).
+    ///
+    /// Two graphs built from the same HEAD with equal state were built from
+    /// identical sources and privacy settings.
+    pub fn worktree_state(root: &Path) -> Option<String> {
+        let git = GitRepository::discover(root).ok()?;
+        let manifest = std::fs::read(manifest_path(root)).unwrap_or_default();
+        git.worktree_state(&manifest).ok()
+    }
+
+    /// The working-tree state recorded by the last saved index, if any.
+    pub fn saved_worktree_state(root: &Path) -> Option<String> {
+        std::fs::read_to_string(Self::worktree_state_path(root))
+            .ok()
+            .map(|text| text.trim().to_string())
     }
 
     /// Returns `true` when the local manifest is newer than the persisted
@@ -56,6 +87,18 @@ impl Workspace {
     /// `index` / `adopt`.
     pub fn build(root: impl AsRef<Path>) -> Result<Self, CliError> {
         let root = Self::canonical_root(root)?;
+        let state = Self::worktree_state(&root);
+        Self::build_with_state(root, state)
+    }
+
+    /// Like [`Workspace::build`], with the working-tree state supplied by the
+    /// caller. The state must be taken before the build reads any source, so a
+    /// concurrent edit leaves the saved state older than the graph and the next
+    /// `index` rebuilds instead of reusing a stale graph.
+    pub fn build_with_state(
+        root: PathBuf,
+        worktree_state: Option<String>,
+    ) -> Result<Self, CliError> {
         let manifest_path = manifest_path(&root);
         let manifest = if manifest_path.exists() {
             Some(Manifest::load(&manifest_path)?)
@@ -143,6 +186,7 @@ impl Workspace {
             repository_name,
             parse_cache: parse_stats,
             registry,
+            worktree_state,
         })
     }
 
@@ -203,6 +247,7 @@ impl Workspace {
             repository_name,
             parse_cache: ParseCacheStats::default(),
             registry,
+            worktree_state: None,
         })
     }
 
@@ -213,10 +258,21 @@ impl Workspace {
         Ok(workspace)
     }
 
-    /// Persists the in-memory graph to `.tpt-weave/graph.json`.
+    /// Persists the in-memory graph to `.tpt-weave/graph.json`, and records
+    /// the working-tree state it was built from (removing any older record
+    /// when there is none, so a stale state can never match).
     pub fn save_index(&self) -> Result<PathBuf, CliError> {
         let path = graph_path(&self.root);
         self.graph.save(&path)?;
+        let state_path = Self::worktree_state_path(&self.root);
+        match &self.worktree_state {
+            Some(state) => std::fs::write(&state_path, state)?,
+            None => match std::fs::remove_file(&state_path) {
+                Ok(()) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.into()),
+            },
+        }
         Ok(path)
     }
 

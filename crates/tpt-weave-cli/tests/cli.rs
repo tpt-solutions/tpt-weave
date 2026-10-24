@@ -171,6 +171,56 @@ fn index_rebuilds_uncommitted_edits_and_reuses_parse_cache() {
     assert_eq!(cached["parse_cache"]["hits"], 1);
 }
 
+fn git(dir: &Path, args: &[&str]) {
+    let output = std::process::Command::new("git")
+        .args(["-c", "user.name=t", "-c", "user.email=t@example.invalid"])
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .expect("git");
+    assert!(
+        output.status.success(),
+        "git {args:?}: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn index_reuses_graph_for_unchanged_uncommitted_tree() {
+    let dir = fixture();
+    let (code, _, stderr) = cli(&dir, &["init"]);
+    assert_eq!(code, 0, "{stderr}");
+    git(&dir, &["init", "-q"]);
+    git(&dir, &["add", "-A"]);
+    git(&dir, &["commit", "-q", "-m", "init"]);
+
+    let rebuilt_flag = |args: &[&str]| -> bool {
+        let (code, raw, stderr) = cli(&dir, args);
+        assert_eq!(code, 0, "{stderr}");
+        let value: serde_json::Value = serde_json::from_str(&raw).expect("index json");
+        value["rebuilt"].as_bool().expect("rebuilt flag")
+    };
+
+    assert!(rebuilt_flag(&["--json", "index"]), "first index builds");
+    assert!(!rebuilt_flag(&["--json", "index"]), "clean tree reuses");
+
+    fs::write(dir.join("src").join("lib.rs"), "pub fn edited() {}\n").expect("edit");
+    assert!(
+        rebuilt_flag(&["--json", "index"]),
+        "uncommitted edit rebuilds"
+    );
+    assert!(
+        !rebuilt_flag(&["--json", "index"]),
+        "unchanged dirty tree reuses the graph"
+    );
+
+    fs::write(dir.join("src").join("lib.rs"), "pub fn edited_again() {}\n").expect("edit");
+    assert!(
+        rebuilt_flag(&["--json", "index"]),
+        "further edit to a dirty file rebuilds"
+    );
+}
+
 #[test]
 fn symbol_lookup_not_found_exits_3() {
     let dir = fixture();

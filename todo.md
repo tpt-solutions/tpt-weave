@@ -434,22 +434,26 @@ without making unverified accuracy or live-provider claims. A normal index
 rebuilds for uncommitted working-tree changes, non-git trees, or a newer local
 manifest; otherwise the parsed-file cache is reused.
 
-Post-change debug-build measurements against the current 103-file / 1172-symbol
-working tree:
+Release-build measurements against the current 120-file / 1434-symbol working
+tree (Windows, `target/release/tpt-weave.exe`):
 
-- full `index`: ~13.0 s (the < 10 s medium-repository target remains missed).
-- no-op `index`: ~4.6 s (graph JSON deserialisation and Git validation dominate;
-  the < 1 s target remains missed).
-- `symbol <name>`: ~4.6 s, with the same graph-load cost.
-- `context "<task>"`: ~1.7 s for retrieval after workspace loading.
-- local debug profile (`scripts/profile.ps1`, `index --full`): 12.24 s wall,
-  4.92 s CPU, 19.8 MiB peak working set. This is a process-level sample, not
-  a release or cross-platform profiler result.
+- full `index --full`: ~2.4 s on the first run after a build, ~0.32 s on later
+  repeats (the difference is not yet explained). The < 10 s target is met.
+- no-op `index` on a clean tree: ~0.12 s. With uncommitted changes that have not
+  changed since the last index it is ~0.18 s: the CLI now stores the working-tree
+  state (`.tpt-weave/worktree-state`, a digest of the git fingerprint and the
+  manifest) and reuses the graph when it matches. Before this, any dirty tree
+  rebuilt the graph (~0.42 s). The < 1 s target is met.
+- `context "<task>"`: ~0.28 s wall (retrieval ~0.15 s), down from ~1.0 s. The
+  cause was `RepositoryGraph::symbol` building a canonical key `String` for every
+  symbol on every lookup, and retrieval calls it thousands of times. It now uses
+  the allocation-free `SymbolId::matches_key`, which is unit-tested against
+  `canonical_key`.
 
-The allocation-heavy eager source read is removed from persisted-index and MCP
-startup paths. The remaining latency is primarily graph deserialisation; further
-work should target a compact/index-cache format and formal CPU/memory
-profiling.
+Earlier debug-build figures (13 s full index, 4.6 s no-op) are superseded by the
+numbers above. Open follow-up: decide whether the CLI should use the Phase 7
+context-selection cache (`CacheKey::context_selection`), which is currently
+unused by the CLI now that context retrieval is ~0.28 s.
 
 ## Phase 16 — Privacy and Security
 
