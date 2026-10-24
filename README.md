@@ -1,5 +1,7 @@
 # tpt-weave
 
+[![CI](https://github.com/tpt-solutions/tpt-weave/actions/workflows/ci.yml/badge.svg)](https://github.com/tpt-solutions/tpt-weave/actions/workflows/ci.yml)
+
 Cross-repository AI-context optimisation for the TPT Solutions ecosystem.
 
 tpt-weave is the reusable AI-context infrastructure layer for TPT Solutions repositories. It indexes Rust
@@ -7,10 +9,11 @@ workspaces deterministically, builds hierarchical source representations, and de
 coding task needs — so expensive models such as GLM-5.3-Flash receive far fewer tokens without losing the
 information required to complete the task correctly.
 
-> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–17 are implemented,
-> with Phase 15 performance work, Phase 16 privacy/security controls, and Phase 17 experiment/benchmark
-> APIs. Phase 18 workload capture/reporting infrastructure is implemented; live JEv/production workload
-> measurements and Phases 18–20 conclusions remain pending.
+> **Status:** pre-alpha. The [design specification](spec.md) is *Proposed*. Phases 0–19 have
+> repository-local implementations, including standard TPT integration (Phase 14), performance work
+> (Phase 15), privacy/security controls (Phase 16), experiment/benchmark APIs (Phase 17), and workload
+> capture/reporting (Phase 18). Still pending: a representative live session, JEv measurements, release
+> conclusions, stable APIs, and crates.io publication (Phase 20). See [todo.md](todo.md) for details.
 
 ## Core principle
 
@@ -35,33 +38,45 @@ Start as one repository with a workspace (spec §25):
 | `crates/tpt-weave-cache` | Phase 7 done | Filesystem cache: revision/schema keys, invalidation, clear, statistics |
 | `crates/tpt-weave-decisions` | Phase 8 done | DecisionProvider trait, mock/fallback providers, JEv categories, policy engine, decision log |
 | `crates/tpt-weave-openrouter` | Phase 8 done | OpenRouter Decisions API (JEv) blocking client: retries, timeouts, usage/confidence |
-| `crates/tpt-weave-mcp` | Phase 9 done | MCP server (stdio): 11 tools, dynamic tool filter, compact schemas |
-| `crates/tpt-weave-cli` | Phase 10 done | `tpt-weave` binary: adopt/init/index/doctor/overview/symbol/refs/expand/context/diff/stats/cache |
+| `crates/tpt-weave-mcp` | Phase 9 done | MCP server (stdio): 11 tools, dynamic tool filter, compact schemas (`publish = false`, see Toolchain) |
+| `crates/tpt-weave-cli` | Phase 10 done | `tpt-weave` binary: adopt, init, index, doctor, overview, symbol, refs, expand, context, skeleton, diff, stats, cache, integration, workload, experiment |
 | `crates/tpt-weave-eval` | Phases 11/15/17/18 infra | Eval harness, benchmark primitives, experiment matrices, workload capture/reporting (spec §23) |
+
+Each crate has its own `README.md` and `CHANGELOG.md`.
 
 ## Quick start
 
-Development (current):
+Build and test the workspace:
 
 ```sh
 cargo test --workspace
 ```
 
-Planned CLI (UX defined in [docs/decisions.md](docs/decisions.md), implemented in Phase 10):
+Install the CLI from a checkout:
 
 ```sh
-cd tpt-cv
+cargo install --path crates/tpt-weave-cli
+```
+
+Onboard an existing Rust repository in one step (`init` + `index --full` + `doctor`):
+
+```sh
+cd my-rust-repo
+tpt-weave adopt
+tpt-weave context "fix the image resampling bug"
+```
+
+Or set up and index step by step:
+
+```sh
+cd my-rust-repo
 tpt-weave init
 tpt-weave index
 tpt-weave context "fix the image resampling bug"
 ```
 
-Or, for an existing repository, `adopt` in one step:
-
-```sh
-cd tpt-cv
-tpt-weave adopt
-```
+See [docs/using-tpt-weave.md](docs/using-tpt-weave.md) for the full setup guide and
+[docs/mcp.md](docs/mcp.md) to run tpt-weave as an MCP server.
 
 ## Documentation
 
@@ -88,6 +103,7 @@ tpt-weave adopt
 
 ## Toolchain
 
-- **MSRV:** Rust 1.85 (edition 2024), enforced via `rust-version` in the workspace manifest
+- **MSRV:** Rust 1.85 (edition 2024) for the library crates, enforced via `rust-version` in the workspace manifest
+- **MCP server:** requires Rust 1.88 or newer because `rmcp` 3.x does; `tpt-weave-mcp` is excluded from the MSRV CI job
 - **Edition:** 2024
 - **License:** MIT (see [LICENSE](LICENSE))
